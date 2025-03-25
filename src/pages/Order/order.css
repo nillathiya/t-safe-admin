@@ -1,0 +1,275 @@
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+.order-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.order-main,
+.order-update {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;  
+  width: 100%;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  /* background-color: #f4f4f4; */
+  font-weight: bold;
+}
+/* 
+.table-striped tr:nth-child(even) {
+  background-color: #f9f9f9;
+} */
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.badge.pending {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.badge.approved {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.badge.rejected {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.badge.accepted {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.badge.dispatched {
+  background-color: #17a2b8;
+  color: #fff;
+}
+
+.ViewButton {
+  color: #fff;
+  background-color: #11cdef;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.ViewButton:hover {
+  background-color: #0fa8cc !important;
+}
+
+.details-btn,
+button {
+  padding: 10px 16px;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+  border: none;
+  font-weight: bold;
+}
+
+.details-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.details-btn:hover {
+  background-color: #0056b3;
+}
+
+button {
+  background-color: #28a745;
+  color: white;
+}
+
+button:hover {
+  /* background-color: #218838; */
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 5px;
+}
+
+select,
+button {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
+@media (max-width: 1024px) {
+  .order-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+
+  .card {
+    padding: 15px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  button,
+  .details-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 15px;
+    width: 100%;
+  }
+
+  .table th,
+  .table td {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .details-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  button {
+    font-size: 14px;
+  }
+}
+
+/* For very small screens (320px - 480px) */
+@media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .table th,
+  .table td {
+    font-size: 12px;
+    padding: 5px;
+  }
+
+  .details-btn,
+  .ViewButton {
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  button {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .badge {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* For very small mobile screens (320px - 375px) */
+@media (max-width: 375px) {
+  .container {
+    padding: 5px;
+  }
+
+  .card {
+    padding: 10px;
+  }
+
+  .table th,
+  .table td {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .details-btn,
+  .ViewButton {
+    font-size: 11px;
+    padding: 5px;
+  }
+
+  button {
+    font-size: 11px;
+    padding: 7px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+}
+@media (max-width: 320px) {
+  .card {
+    padding: 15px;
+    width: 86%;
+  }
+}

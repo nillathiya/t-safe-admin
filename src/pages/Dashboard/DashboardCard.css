@@ -1,0 +1,167 @@
+/* Dark Mode Support */
+:root {
+  --bg-light: #fff;
+  --bg-dark: #2a2b33;
+  --text-light: #000;
+  --text-dark: #fff;
+  --border-light: #ddd;
+  --border-dark: #444;
+  --table-header-light: #f8f9fa;
+  --table-header-dark: #3a3b41;
+}
+
+/* Default Light Mode */
+body {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+}
+
+/* Dark Mode */
+body.dark-mode {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+  background-color: #f5f7fa;
+  transition: background 0.3s ease-in-out;
+}
+
+.dashboard.dark {
+  background-color: #1e1e1e;
+}
+.cards {
+  width: 100%;
+}
+.cards {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  transition:
+    transform 0.3s ease-in-out,
+    background 0.3s;
+}
+
+.dashboard.dark .cards {
+  background: #2a2a2a;
+  color: white;
+}
+
+.cards:hover {
+  transform: translateY(-5px);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: bold;
+  border-bottom: 2px solid #818181;
+  padding-bottom: 5px;
+}
+
+.dashboard.dark .card-title {
+  color: #bbb;
+}
+
+.card-content p {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.dashboard.dark .card-content p {
+  color: #ccc;
+}
+
+.highlight {
+  background: rgba(255, 0, 0, 0.1);
+  padding: 8px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.dashboard.dark .highlight {
+  background: rgba(255, 0, 0, 0.3);
+}
+
+.theme-toggle {
+  padding: 10px 15px;
+  margin-bottom: 20px;
+  border: none;
+  background: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.theme-toggle:hover {
+  background: #0056b3;
+}
+
+.dashboard.dark .theme-toggle {
+  background: #ffa500;
+  color: black;
+}
+
+.dashboard.dark .theme-toggle:hover {
+  background: #cc8400;
+}
+
+@media (max-width: 1024px) {
+  .dash-card {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cards {
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .dash-card {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .cards {
+    width: 100%;
+    max-width: 100%;
+    padding: 15px;
+  }
+
+  .card-title {
+    font-size: 16px;
+  }
+
+  .card-content p {
+    font-size: 14px;
+    margin: 8px 0;
+  }
+
+  .theme-toggle {
+    width: 100%;
+    font-size: 14px;
+    padding: 8px;
+  }
+}
+
+.dash-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}

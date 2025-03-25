@@ -1,0 +1,30 @@
+.btn-primary {
+  color: #fff;
+  background-color: #5e72e4;
+  border-color: #5e72e4;
+  padding: 5px 20px 5px 20px;
+  font-size: 14px;
+  border-radius: 4px;
+  justify-content: center;
+  display: flex;
+  width: 50%;
+
+  text-transform: uppercase;
+}
+button:hover {
+  /* background-color: #8091f3 !important; */
+}
+
+
+input[type="checkbox"] {
+  appearance: auto; /* Ensure browser default */
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+.check_box_scroll{
+  overflow-y: scroll;
+    height: 68px;
+    scrollbar-width: thin;
+    scrollbar-color: #e8e9e9 transparent;
+}

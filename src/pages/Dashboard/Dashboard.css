@@ -1,0 +1,110 @@
+/* Dark Mode Toggle Button */
+.dark-mode-toggle {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.dark-mode-toggle:hover {
+  background: #666;
+}
+
+/* Light & Dark Mode Variables */
+:root {
+  --bg-light: #fff;
+  --bg-dark: #2a2b33;
+  --text-light: #000;
+  --text-dark: #fff;
+  --border-light: #ddd;
+  --border-dark: #444;
+  --table-header-light: #f8f9fa;
+  --table-header-dark: #3a3b41;
+  --white:#24303f;
+}
+
+body.dark-mode {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* Card Styling */
+.card {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  width: 100% !important;
+}
+
+body.dark-mode .card {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+body.dark-mode .card-header {
+  border-bottom: 1px solid var(--border-dark);
+}
+
+body.dark-mode .table th {
+  background-color: var(--table-header-dark);
+  color: var(--text-dark);
+}
+
+.table td {
+  border-bottom: 1px solid var(--border-dark);
+}
+
+body.dark-mode .table td {
+  border-bottom: 1px solid var(--border-dark);
+}
+
+/* Table Responsive */
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto;
+  }
+  .table th,
+  .table td {
+    font-size: 0.875rem;
+    padding: 8px;
+  }
+}
+
+.card .card-header {
+  border-radius: 6px 6px 0px 0px;
+  /* background-color: var(--white); */
+  padding: 18px;
+  border-color: var(--border-color);
+  color: var(--text-secondary-light);
+}
+
+.customer-list {
+  border: 1px solid gray;
+  padding: 4px;
+  border-radius: 9px;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+.new-customerList {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+}
+/* @media (max-width: 375px) {
+  .table th,
+  .table td {
+    font-size: 13px !important;
+    padding: 4px;
+  }
+} */
+.th{
+  background-color: var(--white) !important;
+}

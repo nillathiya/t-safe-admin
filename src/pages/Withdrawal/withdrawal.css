@@ -1,0 +1,28 @@
+.rejectButton {
+  background: #f5365c;
+  padding: 5px 15px;
+  color: white;
+  border-radius: 5px;
+}
+.approveButton {
+  background: #11cdef;
+  padding: 5px 15px;
+  color: white;
+  border-radius: 5px;
+}
+.responsive-btn {
+  width: 13%;
+  min-width: 100px;
+}
+
+@media (max-width: 768px) {
+  .responsive-btn {
+    width: 50%;
+  }
+}
+
+@media (max-width: 576px) {
+  .responsive-btn {
+    width: 100%; /* Makes buttons full width on small screens */
+  }
+}

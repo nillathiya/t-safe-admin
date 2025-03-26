@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
 :root {
   --dt-row-selected: 13, 110, 253;
   --dt-row-selected-text: 255, 255, 255;
@@ -873,7 +875,7 @@ div.dt-container.dt-empty-footer .dt-scroll-body tbody > tr:last-child > * {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: start;
+    justify-content: flex-start;
     font-size: 15px;
   }
 
@@ -1042,7 +1044,7 @@ html.dark .dt-container .dt-paging .dt-paging-button:active {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.9375rem;
-  justify-content: start;
+  justify-content: flex-start;
 }
 .basic-data-table .dt-layout-row .dt-search .dt-input {
   color: var(--text-secondary-light) !important;
@@ -1220,7 +1222,6 @@ html.dark .dt-container .dt-paging .dt-paging-button:active {
     4.13 Overlay Css
     4.14 Position Css
 / ================================= Table Of Contents =================================== **/
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 :root {
   --default-font: ;
   --h1: clamp(2rem, 1.2rem + 4vw, 4.5rem);
@@ -1930,7 +1931,7 @@ html {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.9375rem;
-  justify-content: start;
+  justify-content: flex-start;
 }
 .basic-data-table .dt-layout-row .dt-search .dt-input {
   color: var(--text-secondary-light) !important;

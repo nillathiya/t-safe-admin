@@ -18,7 +18,7 @@ const CardDataStats: React.FC<CardDataStatsProps> = ({
 }) => {
   return (
     <div
-      className={`group flex items-center justify-between rounded-sm rounded-[7px] border border-stroke py-6 px-7.5 shadow-default dark:border-strokedark transition-transform duration-300 ease-in-out hover:scale-105 ${bgGradient}`}
+      className={`group flex items-center justify-between rounded-sm  border border-stroke py-6 px-7.5 shadow-default dark:border-strokedark transition-transform duration-300 ease-in-out hover:scale-105 ${bgGradient}`}
     >
       <div className="mt-4 flex items-end justify-between">
         <div>
@@ -40,3 +40,4 @@ const CardDataStats: React.FC<CardDataStatsProps> = ({
 };
 
 export default CardDataStats;
+2

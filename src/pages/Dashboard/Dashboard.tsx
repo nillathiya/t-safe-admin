@@ -141,11 +141,11 @@ const Dashboard: React.FC = () => {
   );
 
   const totalInvestment = orders.reduce(
-    (acc, order) => (order.status === 1 ? acc + order.bv : acc),
+    (acc, order) => (order.status === 1 ? Number(acc) + Number(order.bv) : acc),
     0,
   );
 
-  console.log("loading",isLoading)
+  console.log('loading', isLoading);
   return (
     <>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">

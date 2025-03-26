@@ -406,7 +406,7 @@ const EditUser: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-4 top-[50%] -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                            className="absolute right-4 top-[50%] -translate-y-1/5 text-gray-500 dark:text-gray-400"
                             style={{ border: 'none', width: '6%' }}
                           >
                             {showPassword ? (

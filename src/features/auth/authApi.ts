@@ -6,8 +6,7 @@ export const adminLogin = async (formData: any): Promise<any> => {
   try {
     const response = await apiClient.post(ROUTES.AUTH.ADMIN_LOGIN, formData);
 
-    const data = response.data.data;
-    return data;
+    return response.data;
   } catch (error: unknown) {
     if (error instanceof AxiosError) {
       throw new Error(error.response?.data?.message || 'An error occurred.');

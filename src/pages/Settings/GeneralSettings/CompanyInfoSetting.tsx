@@ -112,8 +112,8 @@ const CompanyInfoSetting: React.FC = () => {
         updateCompanyInfoAsync({ id: settingId, formData: formDataToSend }),
       ).unwrap();
       toast.success('Updated successfully.');
-    } catch (error:any) {
-      toast.error(error ||'Failed to update.');
+    } catch (error: any) {
+      toast.error(error || 'Failed to update.');
     } finally {
       setSubmittingField({ name, index, value: false, action: 'update' });
     }
@@ -193,12 +193,19 @@ const CompanyInfoSetting: React.FC = () => {
               </thead>
               <tbody>
                 {companyInfo.map((item: any, index: number) => (
-                  <tr key={item._id} className="border-b dark:border-strokedark">
+                  <tr
+                    key={item._id}
+                    className="border-b dark:border-strokedark"
+                  >
                     <td className="py-5 px-2">{index + 1}</td>
                     <td className="py-5 px-2">{item.label}</td>
                     <td className="py-5 px-2">
-                      {item.label === 'companyLogo' || item.label === 'companyFavicon' ? (
-                        <div className="flex items-center gap-2" style={{ paddingRight: '120px' }}>
+                      {item.label === 'companyLogo' ||
+                      item.label === 'companyFavicon' ? (
+                        <div
+                          className="flex items-center gap-2"
+                          style={{ paddingRight: '120px' }}
+                        >
                           <input
                             type="file"
                             accept="image/*"
@@ -220,7 +227,9 @@ const CompanyInfoSetting: React.FC = () => {
                         <input
                           type="text"
                           value={(formData[item.label] as string) || ''}
-                          onChange={(e) => handleInputChange(item.label, e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(item.label, e.target.value)
+                          }
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 md:py-3 md:px-5 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                         />
                       )}

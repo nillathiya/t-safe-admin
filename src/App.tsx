@@ -59,13 +59,14 @@ import CustomerList from './pages/Dashboard/CustomerList';
 import Cards from './pages/Dashboard/Cards';
 import RankSettings from './pages/Settings/GeneralSettings/RankSettings';
 import NewAndEvents from './pages/Settings/NewAndEvent';
-import ViewUserGeneration from './pages/Network/viewUserGeneration';
+import ViewUserGeneration from './pages/Network/ViewUserGeneration';
 import { AppDispatch, RootState } from './store/store';
 import { ICompanyInfo } from './types/settings';
 import { getAllCompanyInfoAsync } from './features/settings/settingsSlice';
 import toast from 'react-hot-toast';
 import { API_URL } from './constants';
 import EditSetting from './pages/Settings/GeneralSettings/EditSetting';
+import NotFound from './components/NotFound';
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { companyInfo } = useSelector((state: RootState) => state.settings);
@@ -81,48 +82,48 @@ function App() {
     setTimeout(() => setLoading(false), 1000);
   }, []);
 
-  useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      try {
-        await dispatch(getAllCompanyInfoAsync()).unwrap();
-      } catch (error: any) {
-        toast.error(error || 'Server Error');
-      }
-    };
+  // useEffect(() => {
+  //   const fetchCompanyInfo = async () => {
+  //     try {
+  //       await dispatch(getAllCompanyInfoAsync()).unwrap();
+  //     } catch (error: any) {
+  //       toast.error(error || 'Server Error');
+  //     }
+  //   };
 
-    if (companyInfo.length === 0) {
-      fetchCompanyInfo();
-    }
-  }, [companyInfo.length, dispatch]);
+  //   if (companyInfo.length === 0) {
+  //     fetchCompanyInfo();
+  //   }
+  // }, [companyInfo.length, dispatch]);
 
-  // Extract values correctly
-  const appName =
-    companyInfo.find((data) => data.label === 'companyName')?.value ||
-    'Default App';
-  const favicon =
-    companyInfo.find((data) => data.label === 'companyFavicon')?.value ||
-    '/default-favicon.ico';
+  // // Extract values correctly
+  // const appName =
+  //   companyInfo.find((data) => data.label === 'companyName')?.value ||
+  //   'Default App';
+  // const favicon =
+  //   companyInfo.find((data) => data.label === 'companyFavicon')?.value ||
+  //   '/default-favicon.ico';
 
-  console.log(favicon);
-  useEffect(() => {
-    if (appName && favicon) {
-      // Set Application Name
-      document.title = appName;
+  // console.log(favicon);
+  // useEffect(() => {
+  //   if (appName && favicon) {
+  //     // Set Application Name
+  //     document.title = appName;
 
-      // Set Favicon
-      let link = document.querySelector(
-        "link[rel~='icon']",
-      ) as HTMLLinkElement | null;
+  //     // Set Favicon
+  //     let link = document.querySelector(
+  //       "link[rel~='icon']",
+  //     ) as HTMLLinkElement | null;
 
-      if (!link) {
-        link = document.createElement('link') as HTMLLinkElement;
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
+  //     if (!link) {
+  //       link = document.createElement('link') as HTMLLinkElement;
+  //       link.rel = 'icon';
+  //       document.head.appendChild(link);
+  //     }
 
-      link.href = `${API_URL}${favicon}`;
-    }
-  }, [appName, favicon]);
+  //     link.href = `${API_URL}${favicon}`;
+  //   }
+  // }, [appName, favicon]);
 
   return loading ? (
     <Loader loader="ClipLoader" size={50} color="blue" fullPage={true} />
@@ -285,7 +286,7 @@ function App() {
             </>
           }
         />
-         <Route
+        <Route
           path="/setting/general-setting/:category/:title"
           element={
             <>
@@ -656,6 +657,16 @@ function App() {
           }
         />
       </Route>
+      {/* Custom 404 Route - Catches all unmatched paths */}
+      <Route
+        path="*"
+        element={
+          <>
+            <PageTitle title="Page Not Found" />
+            <NotFound />
+          </>
+        }
+      />
     </Routes>
   );
 }

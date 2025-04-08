@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   adminLoginAsync,
   selectIsLoggedIn,
+  setUser,
 } from '../../features/auth/authSlice';
 import { AppDispatch } from '../../store/store';
 import toast from 'react-hot-toast';
@@ -33,7 +34,13 @@ const Login = () => {
     console.log('Password:', formData.password);
 
     try {
-      await dispatch(adminLoginAsync(formData)).unwrap();
+      const response = await dispatch(adminLoginAsync(formData)).unwrap();
+      console.log('response', response);
+      dispatch(setUser(response.data.admin));
+      localStorage.setItem(
+        `adminToken_${response.data.admin._id}`,
+        response.data.token,
+      );
       toast.success('Admin Login successfully');
       navigate('/dashboard');
     } catch (error: any) {

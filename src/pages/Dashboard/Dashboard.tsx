@@ -56,9 +56,9 @@ const Dashboard: React.FC = () => {
           }
 
           // Company Info API
-          if (companyInfo.length === 0) {
-            apiCalls.push(dispatch(getAllCompanyInfoAsync()).unwrap());
-          }
+          // if (companyInfo.length === 0) {
+          //   apiCalls.push(dispatch(getAllCompanyInfoAsync()).unwrap());
+          // }
 
           // Income Transactions (All)
           if (incomeTransactions.length === 0) {
@@ -116,11 +116,11 @@ const Dashboard: React.FC = () => {
       isMounted = false;
     };
   }, [
-    loggedInUser,
-    orders.length,
-    users.length,
-    incomeTransactions.length,
-    dispatch,
+    // loggedInUser,
+    // orders.length,
+    // users.length,
+    // incomeTransactions.length,
+    // dispatch,
   ]);
 
   const activeUserCount = users.reduce(

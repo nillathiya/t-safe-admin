@@ -3,6 +3,7 @@ import $ from 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt';
 import 'datatables.net-select-dt';
+import 'datatables.net-dt/js/dataTables.dataTables.js';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import Skeleton from '../../components/ui/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
@@ -21,9 +22,7 @@ import Icon from '../../components/Icons/Icon';
 import { requestImpersonationTokenAsync } from '../../features/auth/authSlice';
 
 const AllUsers: React.FC = () => {
-  const { users, isLoading, updateUsers } = useSelector(
-    (state: RootState) => state.user,
-  );
+  const { users, updateUsers } = useSelector((state: RootState) => state.user);
   const { orders } = useSelector((state: RootState) => state.orders);
   const dispatch = useDispatch<AppDispatch>();
   const tableRef = useRef<HTMLTableElement>(null);
@@ -31,50 +30,61 @@ const AllUsers: React.FC = () => {
     index: 0,
     value: false,
   });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        if (users.length == 0) {
-          await dispatch(getAllUserAsync()).unwrap();
-        }
-        if (orders.length == 0) {
-          await dispatch(getAllOrdersAsync()).unwrap();
-        }
-      } catch (error: any) {
-        toast.error(error?.message || 'Server error');
-      }
-    })();
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (tableRef.current && !isLoading && users.length > 0) {
-      const $table = $(tableRef.current as HTMLTableElement);
-
-      // Ensure DataTable is initialized only once
-      if (!($table as any).DataTable.isDataTable(tableRef.current)) {
-        ($table as any).DataTable({
-          paging: true,
-          ordering: true,
-          info: true,
-          responsive: true,
-          searching: true,
-          pageLength: DEFAULT_PER_PAGE_ITEMS,
-        });
-
-        // Mark DataTable initialization
-        if (tableRef.current) tableRef.current.dataset.dtInstance = 'true';
-      }
-    }
-  }, [users]);
-
-  const handleRefresh = async () => {
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
       await dispatch(getAllUserAsync()).unwrap();
       await dispatch(getAllOrdersAsync()).unwrap();
     } catch (error: any) {
-      toast.error(error || 'Server error');
+      toast.error(error?.message || 'Server error');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [dispatch, users.length]);
+
+  useEffect(() => {
+    console.log('1');
+    const tableElement = tableRef.current;
+    if (!tableElement || isLoading || users.length === 0) return;
+    console.log('2');
+
+    let tableInstance: any; // Store DataTable instance
+    const timer = setTimeout(() => {
+      const $table = $(tableElement);
+
+      // Destroy existing DataTable if initialized
+      if ($.fn.dataTable.isDataTable(tableElement)) {
+        $table.DataTable().destroy();
+      }
+
+      // Reinitialize DataTable
+      tableInstance = $table.DataTable({
+        paging: true,
+        ordering: true,
+        info: true,
+        responsive: true,
+        searching: true,
+        pageLength: DEFAULT_PER_PAGE_ITEMS,
+      });
+    }, 300); // Delay for DOM stability
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timer);
+      if (tableInstance && $.fn.dataTable.isDataTable(tableElement)) {
+        tableInstance.destroy();
+      }
+    };
+  }, [users, isLoading]);
+
+  const handleRefresh = async () => {
+    fetchData();
   };
 
   const handleToggleStatus = async (
@@ -126,14 +136,17 @@ const AllUsers: React.FC = () => {
   };
 
   const updatedUsers = useMemo(() => {
-    if (orders.length > 0 && users.length > 0) {
+    if (users.length > 0) {
       return users.map((user) => {
         const userId = user._id;
         const userOrders = orders.filter((or) => or.customerId?._id === userId);
-        const totalInvestment = userOrders.reduce((acc, or) => acc + or.bv, 0);
+        const totalInvestment = userOrders.reduce(
+          (acc, or) => acc + (or.bv || 0),
+          0,
+        );
         return {
           ...user,
-          package: totalInvestment,
+          package: totalInvestment || 0,
         };
       });
     }
@@ -257,8 +270,8 @@ const AllUsers: React.FC = () => {
                     <td className="table-cell"> {user.username || 'N/A'}</td>
                     <td className="table-cell"> {user.email || 'N/A'}</td>
                     <td className="table-cell"> {user.mobile || 'N/A'}</td>
-                    <td className="table-cell"> {user.package || 'N/A'}</td>
-                    <td className="table-cell"> {user.myRank || 'N/A'}</td>
+                    <td className="table-cell"> {user.package || 0}</td>
+                    <td className="table-cell"> {user.myRank || 0}</td>
                     <td className="table-cell">
                       <div className="flex gap-2 items-center">
                         {user.walletAddress

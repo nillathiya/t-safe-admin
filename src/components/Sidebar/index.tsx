@@ -5,8 +5,8 @@ import ArrowIcon from '../Icons/downArrowIcon';
 import { API_URL, ICONS, MENU } from '../../constants';
 import Icon from '../Icons/Icon';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store/store';
-import { adminLogoutAsync } from '../../features/auth/authSlice';
+import { AppDispatch, RootState, persistor } from '../../store/store';
+import { adminLogoutAsync, clearUser } from '../../features/auth/authSlice';
 // import {
 //   PrepareOutAsync,
 //   TatumPayoutAsync,
@@ -32,6 +32,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const storedSidebarExpanded = localStorage.getItem('sidebar-expanded');
   const [sidebarExpanded, setSidebarExpanded] = useState(
     storedSidebarExpanded === null ? false : storedSidebarExpanded === 'true',
+  );
+  const { currentUser: loggedInUser } = useSelector(
+    (state: RootState) => state.auth,
   );
 
   // close on click outside
@@ -70,7 +73,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   }, [sidebarExpanded]);
 
   const handleLogout = () => {
-    dispatch(adminLogoutAsync());
+    // dispatch(adminLogoutAsync());
+    if (loggedInUser) {
+      localStorage.removeItem(`adminToken_${loggedInUser._id}`);
+    }
+    persistor.purge(); // Non-blocking
+    dispatch(clearUser());
     navigate('/');
   };
 
@@ -91,18 +99,18 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     }
   };
 
-  useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      try {
-        await dispatch(getAllCompanyInfoAsync()).unwrap();
-      } catch (error: any) {
-        toast.error(error || 'Server Error');
-      }
-    };
-    if (companyInfo.length == 0) {
-      fetchCompanyInfo();
-    }
-  }, []);
+  // useEffect(() => {
+  //   const fetchCompanyInfo = async () => {
+  //     try {
+  //       await dispatch(getAllCompanyInfoAsync()).unwrap();
+  //     } catch (error: any) {
+  //       toast.error(error || 'Server Error');
+  //     }
+  //   };
+  //   if (companyInfo.length == 0) {
+  //     fetchCompanyInfo();
+  //   }
+  // }, []);
 
   const companyLogo = companyInfo.find((data) => data.label === 'companyLogo')
     ?.value;

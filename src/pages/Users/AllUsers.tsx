@@ -46,42 +46,7 @@ const AllUsers: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dispatch, users.length]);
-
-  useEffect(() => {
-    console.log('1');
-    const tableElement = tableRef.current;
-    if (!tableElement || isLoading || users.length === 0) return;
-    console.log('2');
-
-    let tableInstance: any; // Store DataTable instance
-    const timer = setTimeout(() => {
-      const $table = $(tableElement);
-
-      // Destroy existing DataTable if initialized
-      if ($.fn.dataTable.isDataTable(tableElement)) {
-        $table.DataTable().destroy();
-      }
-
-      // Reinitialize DataTable
-      tableInstance = $table.DataTable({
-        paging: true,
-        ordering: true,
-        info: true,
-        responsive: true,
-        searching: true,
-        pageLength: DEFAULT_PER_PAGE_ITEMS,
-      });
-    }, 300); // Delay for DOM stability
-
-    // Cleanup function
-    return () => {
-      clearTimeout(timer);
-      if (tableInstance && $.fn.dataTable.isDataTable(tableElement)) {
-        tableInstance.destroy();
-      }
-    };
-  }, [users, isLoading]);
+  }, [dispatch]);
 
   const handleRefresh = async () => {
     fetchData();
@@ -136,22 +101,71 @@ const AllUsers: React.FC = () => {
   };
 
   const updatedUsers = useMemo(() => {
-    if (users.length > 0) {
-      return users.map((user) => {
-        const userId = user._id;
-        const userOrders = orders.filter((or) => or.customerId?._id === userId);
-        const totalInvestment = userOrders.reduce(
-          (acc, or) => acc + (or.bv || 0),
-          0,
-        );
-        return {
-          ...user,
-          package: totalInvestment || 0,
-        };
-      });
-    }
-    return [];
+    console.log('Computing updatedUsers', { users, orders });
+    if (!users || users.length === 0) return [];
+    return users.map((user) => {
+      const userId = user._id;
+      const userOrders = orders.filter((or) => or.customerId?._id === userId);
+      const totalInvestment = userOrders.reduce(
+        (acc, or) => acc + (or.bv || 0),
+        0,
+      );
+      return {
+        ...user,
+        package: totalInvestment || 0,
+      };
+    });
   }, [users, orders]);
+
+  useEffect(() => {
+    console.log('1');
+    const tableElement = tableRef.current;
+    console.log('tableElement', tableElement);
+    console.log('isLoading', isLoading);
+    console.log('users', users);
+
+    let timer: NodeJS.Timeout;
+    let tableInstance: any;
+
+    if (!isLoading && updatedUsers.length > 0 && tableElement) {
+      console.log('2');
+
+      timer = setTimeout(() => {
+        console.log('3');
+
+        // ✅ Now tableElement is guaranteed to be non-null
+        const $table = $(tableElement);
+
+        if ($.fn.dataTable.isDataTable(tableElement)) {
+          $table.DataTable().destroy();
+          $table.empty(); // Clear DOM to prevent conflicts
+        }
+
+        console.log('4');
+
+        tableInstance = $table.DataTable({
+          paging: true,
+          ordering: true,
+          info: true,
+          responsive: true,
+          searching: true,
+          pageLength: DEFAULT_PER_PAGE_ITEMS,
+        });
+      }, 300);
+    }
+
+    console.log('5');
+
+    return () => {
+      clearTimeout(timer);
+      if (
+        tableInstance &&
+        $.fn.dataTable.isDataTable(tableElement as HTMLTableElement)
+      ) {
+        tableInstance.destroy();
+      }
+    };
+  }, [updatedUsers]);
 
   const navigate = useNavigate();
 
@@ -196,7 +210,11 @@ const AllUsers: React.FC = () => {
               </button>
             </div>
           </div>
-          <table ref={tableRef} className="table bordered-table display">
+          <table
+            ref={tableRef}
+            id="dataTable"
+            className="table bordered-table display"
+          >
             <thead>
               <tr>
                 <th className="table-header">ID</th>

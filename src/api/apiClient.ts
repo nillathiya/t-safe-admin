@@ -10,7 +10,7 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 const getAdminToken = (userId: string) => {
-  console.log('userId', userId);
+  // console.log('userId', userId);
   return localStorage.getItem(`adminToken_${userId}`);
 };
 
@@ -20,13 +20,12 @@ export const setupApiInterceptors = (store: Store) => {
     (config) => {
       const { auth } = store.getState();
       const loggedInUser = auth.currentUser;
-      console.log('loggedInUser', loggedInUser);
+      // console.log('loggedInUser', loggedInUser);
 
       if (loggedInUser && loggedInUser._id) {
         const adminToken = getAdminToken(loggedInUser._id);
-        console.log('adminToken', adminToken);
+        // console.log('adminToken', adminToken);
         if (adminToken) {
-          console.log('adminToken');
           config.headers.Authorization = `Bearer ${adminToken}`;
         }
       }

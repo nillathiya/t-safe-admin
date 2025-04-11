@@ -13,14 +13,29 @@ import Breadcrumb from '../../../components/Breadcrumbs/Breadcrumb';
 import Loader from '../../../common/Loader';
 import { API_URL } from '../../../constants';
 import './setting.css';
+import Select from 'react-select';
+
+interface Option {
+  key: string;
+  label: string;
+  status: boolean;
+}
 
 interface SettingItem {
   _id: string;
   name: string;
   title: string;
-  value: string | string[];
-  type: 'text' | 'image' | 'date' | 'multi_values' | 'option';
-  options?: string[] | string;
+  value: string | string[] | Option[] | boolean;
+  type:
+    | 'text'
+    | 'image'
+    | 'date'
+    | 'multi_values'
+    | 'option'
+    | 'array'
+    | 'json_array'
+    | 'boolean';
+  options?: string[] | string | Option[] | boolean;
 }
 
 const EditSetting: React.FC = () => {
@@ -33,7 +48,7 @@ const EditSetting: React.FC = () => {
   const [settings, setSettings] = useState<SettingItem[]>([]);
   const [editableSettings, setEditableSettings] = useState<SettingItem[]>([]);
   const [formData, setFormData] = useState<
-    Record<string, string | string[] | File>
+    Record<string, string | string[] | Option[] | File | boolean>
   >({});
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -49,9 +64,7 @@ const EditSetting: React.FC = () => {
           navigate('/setting/general-setting/rank-settings');
           break;
         case 'user-settings':
-          if (userSettings.length === 0) {
-            await dispatch(getUserSettingsAsync()).unwrap();
-          }
+          await dispatch(getUserSettingsAsync()).unwrap();
           setSettings(userSettings);
           break;
         case 'admin-settings':
@@ -71,22 +84,33 @@ const EditSetting: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [category, dispatch, navigate, userSettings, adminSettings]);
+  }, []);
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
 
   useEffect(() => {
+    console.log('settings', settings);
     if (settings.length > 0 && title) {
       const matchedSettings = settings.filter(
         (setting) => setting.title.trim() === title.trim(),
       );
       setEditableSettings(matchedSettings);
-      const newFormData: Record<string, string | string[] | File> = {};
+      const newFormData: Record<
+        string,
+        string | string[] | Option[] | File | boolean
+      > = {};
       const newFilePreviews: Record<string, string> = {};
       matchedSettings.forEach((setting) => {
-        newFormData[setting._id] = setting.value;
+        if (setting.type === 'array' && Array.isArray(setting.value)) {
+          // Convert initial value (array of objects) to array of keys
+          newFormData[setting._id] = (setting.value as Option[]).map(
+            (opt) => opt.key,
+          );
+        } else {
+          newFormData[setting._id] = setting.value;
+        }
         if (setting.type === 'image' && setting.value) {
           newFilePreviews[setting._id] = (setting.value as string).startsWith(
             '/uploads',
@@ -107,6 +131,13 @@ const EditSetting: React.FC = () => {
     [],
   );
 
+  const handleSelectChange = useCallback((id: string, selectedOptions: any) => {
+    const selectedValues = selectedOptions
+      ? selectedOptions.map((option: { value: string }) => option.value)
+      : [];
+    setFormData((prev) => ({ ...prev, [id]: selectedValues }));
+  }, []);
+
   const handleFileChange = useCallback(
     (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0]) {
@@ -125,55 +156,83 @@ const EditSetting: React.FC = () => {
     [],
   );
 
-  const handleMultiValueChange = useCallback(
-    (id: string, e: React.ChangeEvent<HTMLSelectElement>) => {
-      const values = Array.from(
-        e.target.selectedOptions,
-        (option) => option.value,
-      );
-      handleInputChange(id, values);
-    },
-    [handleInputChange],
-  );
+  const handleToggleChange = useCallback((id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  }, []);
 
   const handleSubmit = useCallback(
     async (setting: SettingItem) => {
       if (!category) return;
 
       setIsUpdating((prev) => ({ ...prev, [setting._id]: true }));
-      const value = formData[setting._id];
-      const formDataToSend = new FormData();
+      let value;
+      value = formData[setting._id];
+      console.log('setting', setting);
+      console.log('selected value', value);
 
-      if (setting.type === 'image') {
-        formDataToSend.append('file', value as File);
-      } else {
-        formDataToSend.append(
-          'value',
-          typeof value === 'string' ? value : JSON.stringify(value),
+      if (
+        Array.isArray(value) &&
+        value.every((v) => typeof v === 'string') &&
+        Array.isArray(setting.value)
+      ) {
+        const selectedKeys = value as string[];
+        value = (setting.options as Option[]).filter((item) =>
+          selectedKeys.includes(item.key),
         );
       }
 
+      console.log('value', value);
       try {
         let result;
-        switch (category) {
-          case 'user-settings':
-            result = await dispatch(
-              updateUserSettingAsync({
-                id: setting._id,
-                formData: formDataToSend,
-              }),
-            ).unwrap();
-            break;
-          case 'admin-settings':
-            result = await dispatch(
-              updateAdminSettingAsync({
-                id: setting._id,
-                formData: formDataToSend,
-              }),
-            ).unwrap();
-            break;
-          default:
-            throw new Error('Unsupported category for update');
+
+        if (setting.type === 'image') {
+          // Handle FormData only for image
+          const formDataToSend = new FormData();
+          formDataToSend.append('file', value as File);
+
+          switch (category) {
+            case 'user-settings':
+              result = await dispatch(
+                updateUserSettingAsync({
+                  id: setting._id,
+                  formData: formDataToSend,
+                }),
+              ).unwrap();
+              break;
+            case 'admin-settings':
+              result = await dispatch(
+                updateAdminSettingAsync({
+                  id: setting._id,
+                  formData: formDataToSend,
+                }),
+              ).unwrap();
+              break;
+            default:
+              throw new Error('Unsupported category for update');
+          }
+        } else {
+          const payload = {
+            id: setting._id,
+            formData: {
+              value: typeof value === 'string' ? value : value,
+            },
+          };
+
+          switch (category) {
+            case 'user-settings':
+              result = await dispatch(updateUserSettingAsync(payload)).unwrap();
+              break;
+            case 'admin-settings':
+              result = await dispatch(
+                updateAdminSettingAsync(payload),
+              ).unwrap();
+              break;
+            default:
+              throw new Error('Unsupported category for update');
+          }
         }
 
         if (result?.status === 'success' && result?.data) {
@@ -181,12 +240,14 @@ const EditSetting: React.FC = () => {
             ...prev,
             [setting._id]: result.data.value,
           }));
+
           if (setting.type === 'image') {
             setFilePreviews((prev) => ({
               ...prev,
               [setting._id]: `${API_URL}${result.data.value}`,
             }));
           }
+
           toast.success(`${setting.name} updated successfully`);
         }
       } catch (error: any) {
@@ -212,6 +273,7 @@ const EditSetting: React.FC = () => {
     return <div className="p-6">Invalid category or title</div>;
   }
 
+  console.log('formData', formData);
   return (
     <>
       <Breadcrumb pageName={`Edit ${title} (${category})`} />
@@ -256,7 +318,6 @@ const EditSetting: React.FC = () => {
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
                       )}
-
                       {setting.type === 'image' && (
                         <div className="flex items-center gap-2">
                           <input
@@ -283,8 +344,7 @@ const EditSetting: React.FC = () => {
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
                       )}
-
-                      {setting.type.trim() === 'multi_values' &&
+                      {/* {setting.type.trim() === 'multi_values' &&
                         (() => {
                           let optionsArray: string[] = [];
 
@@ -366,15 +426,13 @@ const EditSetting: React.FC = () => {
                               ))}
                             </div>
                           );
-                        })()}
-
-                      {setting.type.trim() === 'json_array' &&
+                        })()} */}
+                      {/* {setting.type.trim() === 'json_array' &&
                         (() => {
                           let parsedOptions: Record<string, string> = {};
 
                           try {
                             let firstParse = JSON.parse(setting.options);
-                            // Ensure it's parsed correctly
                             parsedOptions =
                               typeof firstParse === 'string'
                                 ? JSON.parse(firstParse)
@@ -386,7 +444,6 @@ const EditSetting: React.FC = () => {
                             );
                           }
 
-                          // ❗ Ensure parsedOptions is a valid object
                           if (
                             !parsedOptions ||
                             typeof parsedOptions !== 'object'
@@ -420,8 +477,7 @@ const EditSetting: React.FC = () => {
                                 {optionsArray.length > 0 ? (
                                   optionsArray.map((opt) => (
                                     <option key={opt.key} value={opt.key}>
-                                      {String(opt.label)}{' '}
-                                      {/* Cast label to string */}
+                                      {String(opt.label)}
                                     </option>
                                   ))
                                 ) : (
@@ -430,9 +486,8 @@ const EditSetting: React.FC = () => {
                               </select>
                             </div>
                           );
-                        })()}
-
-                      {setting.type === 'option' &&
+                        })()} */}
+                      {/* {setting.type === 'option' &&
                         (() => {
                           const options: string[] = Array.isArray(
                             setting.options,
@@ -465,7 +520,148 @@ const EditSetting: React.FC = () => {
                               ))}
                             </select>
                           );
-                        })()}
+                        })()} */}
+
+                      {setting.type === 'boolean' && (
+                        <div>
+                          <label className="flex cursor-pointer items-center">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                name="editProfileWithOTP"
+                                checked={formData[setting._id] === true}
+                                onChange={(e) =>
+                                  handleToggleChange(setting._id)
+                                }
+                                className="sr-only"
+                              />
+                              {false ? (
+                                <div className="flex w-10 mx-auto">
+                                  <Loader
+                                    loader="ClipLoader"
+                                    size={20}
+                                    color="blue"
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <div
+                                    className={`block w-14 h-8 rounded-full ${
+                                      formData[setting._id] === true
+                                        ? 'bg-green-500'
+                                        : 'bg-gray-500'
+                                    }`}
+                                  ></div>
+                                  <div
+                                    className={`absolute left-1 top-1 w-6 h-6 rounded-full bg-white transition ${
+                                      formData[setting._id] === true
+                                        ? 'translate-x-full bg-primary'
+                                        : ''
+                                    }`}
+                                  ></div>
+                                </>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                      {setting.type === 'array' && (
+                        <div>
+                          <Select
+                            isMulti
+                            options={
+                              Array.isArray(setting.options)
+                                ? setting.options.map((opt) => {
+                                    if (
+                                      typeof opt === 'object' &&
+                                      'key' in opt &&
+                                      'label' in opt
+                                    ) {
+                                      return {
+                                        value: opt.key,
+                                        label: opt.label,
+                                      };
+                                    }
+                                    return {
+                                      value: String(opt),
+                                      label: String(opt),
+                                    };
+                                  })
+                                : []
+                            }
+                            value={
+                              Array.isArray(formData[setting._id])
+                                ? (formData[setting._id] as string[])
+                                    .map((key) => {
+                                      const opt = Array.isArray(setting.options)
+                                        ? setting.options.find(
+                                            (o) =>
+                                              (typeof o === 'object' &&
+                                                o.key === key) ||
+                                              o === key,
+                                          )
+                                        : null;
+                                      return opt
+                                        ? {
+                                            value:
+                                              typeof opt === 'object'
+                                                ? opt.key
+                                                : opt,
+                                            label:
+                                              typeof opt === 'object'
+                                                ? opt.label
+                                                : opt,
+                                          }
+                                        : null;
+                                    })
+                                    .filter(
+                                      (
+                                        item,
+                                      ): item is {
+                                        value: string;
+                                        label: string;
+                                      } => Boolean(item),
+                                    )
+                                : []
+                            }
+                            onChange={(selected) =>
+                              handleSelectChange(setting._id, selected)
+                            }
+                            placeholder="Select options..."
+                            styles={{
+                              container: (base) => ({
+                                ...base,
+                                width: 300,
+                              }),
+                            }}
+                            className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
+                          />
+                          <p>
+                            Selected Values:{' '}
+                            {Array.isArray(formData[setting._id]) &&
+                            (formData[setting._id] as string[]).length > 0
+                              ? (formData[setting._id] as string[])
+                                  .map((key) => {
+                                    const opt = Array.isArray(setting.options)
+                                      ? setting.options.find(
+                                          (o) =>
+                                            (typeof o === 'object' &&
+                                              o.key === key) ||
+                                            o === key,
+                                        )
+                                      : null;
+                                    return opt
+                                      ? typeof opt === 'object'
+                                        ? opt.label
+                                        : opt
+                                      : null;
+                                  })
+                                  .filter(Boolean)
+                                  .join(', ') || 'None'
+                              : 'None'}
+                          </p>
+                        </div>
+                      )}
                     </td>
                     <td className="py-5 px-2">
                       <button

@@ -151,7 +151,7 @@ export const deleteCompanyInfo = async (
 
 export const getUserSettings = async (): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiClient.post(ROUTES.SETTINGS.GET_USER_SETTINGS);
+    const response = await apiClient.get(ROUTES.SETTINGS.GET_USER_SETTINGS);
 
     return response.data;
   } catch (error: unknown) {
@@ -183,7 +183,7 @@ export const updateUserSetting = async ({
   formData: any;
 }): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiClient.post(
+    const response = await apiClient.put(
       ROUTES.SETTINGS.UPDATE_USER_SETTING(id),
       formData,
     );

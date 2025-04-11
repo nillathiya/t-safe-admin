@@ -169,7 +169,7 @@ export const ROUTES: Routes = {
     GET_USER_SETTINGS: `${API_URL}/user-setting`,
     GET_ADMIN_SETTINGS: `${API_URL}/api/admin-settings/get`,
     UPDATE_USER_SETTING: (id: string) =>
-      `${API_URL}/api/user-settings/update/${id}`,
+      `${API_URL}/user-setting/${id}`,
     UPDATE_ADMIN_SETTING: (id: string) =>
       `${API_URL}/api/admin-settings/update/${id}`,
 

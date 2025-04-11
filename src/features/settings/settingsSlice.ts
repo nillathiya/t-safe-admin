@@ -254,7 +254,6 @@ export const updateUserSettingAsync = createAsyncThunk(
   },
 );
 
-
 export const updateAdminSettingAsync = createAsyncThunk(
   'settings/updateAdminSetting',
   async (

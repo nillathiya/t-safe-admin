@@ -45,7 +45,7 @@ const settingsPersistConfig = {
   key: 'settings',
   storage,
   transforms: [transactionEncryptTransform],
-  whitelist: ['companyInfo'],
+  whitelist: ['companyInfo',"userSettings","adminSettings"],
 };
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedSettingsReducer = persistReducer(

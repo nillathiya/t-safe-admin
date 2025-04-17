@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import SidebarLinkGroup from './SidebarLinkGroup';
 import ArrowIcon from '../Icons/downArrowIcon';
-import { API_URL, ICONS, MENU } from '../../constants';
+import { ICONS, MENU } from '../../constants';
 import Icon from '../Icons/Icon';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState, persistor } from '../../store/store';
@@ -13,6 +13,7 @@ import { adminLogoutAsync, clearUser } from '../../features/auth/authSlice';
 // } from '../../features/payout-reports/payoutReportsSlice';
 import toast from 'react-hot-toast';
 import { getAllCompanyInfoAsync } from '../../features/settings/settingsSlice';
+import { API_URL } from '../../api/routes';
 
 interface SidebarProps {
   sidebarOpen: boolean;

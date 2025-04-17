@@ -11,8 +11,9 @@ import { Dialog } from '@headlessui/react';
 import toast from 'react-hot-toast';
 import Loader from '../../common/Loader';
 import Tree from 'react-d3-tree';
-import { API_URL, ICONS } from '../../constants';
+import { ICONS } from '../../constants';
 import Icon from '../../components/Icons/Icon';
+import { API_URL } from '../../api/routes';
 
 function viewUserGeneration() {
   const { id } = useParams<{ id: string }>();

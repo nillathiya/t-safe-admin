@@ -2,16 +2,22 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   getAllIncomeTransaction,
   directTransferFund,
-  getAdminFundTransaction,
+  getFundTransactions,
+  updateUserFundTransaction,
 } from './transactionApi';
-import { FundTransaction, IncomeTransaction } from '../../types';
+import {
+  IFundTransaction,
+  IFundTransactionParams,
+  IncomeTransaction,
+  IUpdateUserFundTransactionPayload,
+} from '../../types';
 
 interface TransactionState {
   isLoading: boolean;
   incomeTransactionsLoading: boolean;
   transactions: [];
   incomeTransactions: IncomeTransaction[];
-  adminFundTransactions:FundTransaction[];
+  fundTransactions: IFundTransaction[];
 }
 
 const initialState: TransactionState = {
@@ -19,7 +25,7 @@ const initialState: TransactionState = {
   incomeTransactionsLoading: false,
   transactions: [],
   incomeTransactions: [],
-  adminFundTransactions:[],
+  fundTransactions: [],
 };
 
 export const getAllIncomeTransactionAsync = createAsyncThunk(
@@ -50,11 +56,30 @@ export const directTransferFundAsync = createAsyncThunk(
   },
 );
 
-export const getAdminFundTransactionAsync = createAsyncThunk(
-  'transaction/getAdminFundTransaction',
-  async (params: {txType:string}, { rejectWithValue }) => {
+export const getFundTransactionsAsync = createAsyncThunk(
+  'transaction/getFundTransactions',
+  async (params: IFundTransactionParams, { rejectWithValue }) => {
     try {
-      const data = await getAdminFundTransaction(params);
+      const data = await getFundTransactions(params);
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'An unknown error occurred',
+      );
+    }
+  },
+);
+export const updateUserFundTransactionAsync = createAsyncThunk(
+  'transaction/updateUserFundTransaction',
+  async (
+    {
+      id,
+      formData,
+    }: { id: string; formData: IUpdateUserFundTransactionPayload },
+    { rejectWithValue },
+  ) => {
+    try {
+      const data = await updateUserFundTransaction(id, formData);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -91,19 +116,33 @@ const transactionSlice = createSlice({
       .addCase(directTransferFundAsync.rejected, (state) => {
         state.isLoading = false;
       })
-      // getAdminFundTransactionAsync
-      .addCase(getAdminFundTransactionAsync.pending, (state) => {
+      // getFundTransactionsAsync
+      .addCase(getFundTransactionsAsync.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(getAdminFundTransactionAsync.fulfilled, (state, action) => {
+      .addCase(getFundTransactionsAsync.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.adminFundTransactions = action.payload.data;
+        state.fundTransactions = action.payload.data;
       })
-      .addCase(getAdminFundTransactionAsync.rejected, (state) => {
+      .addCase(getFundTransactionsAsync.rejected, (state) => {
         state.isLoading = false;
       })
+      // updateUserFundTransactionAsync
+      .addCase(updateUserFundTransactionAsync.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(updateUserFundTransactionAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const updatedTransaction = action.payload.data;
+
+        state.fundTransactions = state.fundTransactions.map((tx) =>
+          tx._id === updatedTransaction._id ? updatedTransaction : tx,
+        );
+      })
+      .addCase(updateUserFundTransactionAsync.rejected, (state) => {
+        state.isLoading = false;
+      });
   },
 });
 
 export default transactionSlice.reducer;
-

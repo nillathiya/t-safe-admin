@@ -1,7 +1,13 @@
 import { apiClient } from '../../api/apiClient';
 import { ROUTES } from '../../api/routes';
 import { AxiosError } from 'axios';
-import { ApiResponse, Support, TicketMessage, Tickets } from '../../types';
+import {
+  ApiResponse,
+  ITicketMsgQuery,
+  Support,
+  TicketMessage,
+  Tickets,
+} from '../../types';
 
 export const getSupportRequests = async ({
   ticket,
@@ -53,7 +59,7 @@ export const updateSupportRequest = async ({
 
 export const fetchTickets = async (): Promise<ApiResponse<Tickets[]>> => {
   try {
-    const response = await apiClient.post(ROUTES.SUPPORT.GET_ALL_TICKETS);
+    const response = await apiClient.get(ROUTES.SUPPORT.GET_ALL_TICKETS);
 
     return response.data;
   } catch (error: unknown) {
@@ -66,15 +72,14 @@ export const fetchTickets = async (): Promise<ApiResponse<Tickets[]>> => {
 
 export const fetchMessages = async ({
   ticketId,
-  formData,
+  query,
 }: {
   ticketId: string;
-  formData: any;
+  query: ITicketMsgQuery;
 }): Promise<ApiResponse<Tickets>> => {
   try {
-    const response = await apiClient.post(
-      ROUTES.SUPPORT.GET_MESSAGES(ticketId),
-      formData,
+    const response = await apiClient.get(
+      ROUTES.SUPPORT.GET_MESSAGES(ticketId, query),
     );
 
     return response.data;
@@ -105,7 +110,6 @@ export const replyMessage = async (formData: {
   }
 };
 
-
 export const updateTicketStatus = async ({
   ticketId,
   formData,
@@ -114,7 +118,7 @@ export const updateTicketStatus = async ({
   formData: any;
 }): Promise<ApiResponse<Tickets>> => {
   try {
-    const response = await apiClient.post(
+    const response = await apiClient.patch(
       ROUTES.SUPPORT.UPDATE_TICKET_STATUS(ticketId),
       formData,
     );

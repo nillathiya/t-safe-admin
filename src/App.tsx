@@ -18,28 +18,10 @@ import AllUsers from './pages/Users/AllUsers';
 import Support from './pages/Support/Support';
 import GeneralSetting from './pages/Settings/GeneralSettings';
 import CategorySettings from './pages/Settings/GeneralSettings/CategorySettings';
-import DataBaseBackUp from './pages/Settings/DataBaseBackUp';
 import EditUser from './pages/Users/EditUser';
 import Login from './pages/Login/Login';
 import ChangePassword from './pages/Password/ChangePassword';
-import RegistrationSetting from './pages/Settings/RegistrationSetting';
-import InvestmentSetting from './pages/Settings/InvestmentSetting';
-import WithdrawalSetting from './pages/Settings/WithdrawalSetting';
-import FundSetting from './pages/Settings/FundSetting';
-import ProfileSetting from './pages/Settings/ProfileSetting';
-import DynamicpagesSetting from './pages/Settings/DynamicpagesSetting';
-import ReInvestmentSetting from './pages/Settings/ReInvestmentSetting';
-import AccountSetting from './pages/Settings/AccountSetting';
-import RegisterWithOTPSetting from './pages/Settings/RegisterWithOTPSetting';
-import BtcAddressOTPSetting from './pages/Settings/BtcAddressOTPSetting';
-import BtcAddressWithOTPSetting from './pages/Settings/BtcAddressWithOTPSetting';
-import LoginWithOTPSetting from './pages/Settings/LoginWithOTPSetting';
-import PaymentMethodSetting from './pages/Settings/PaymentMethodSetting';
-import PaymentMethodAcceptSetting from './pages/Settings/PaymentMethodAcceptSetting';
 import CompanyInfoSetting from './pages/Settings/GeneralSettings/CompanyInfoSetting';
-import PaymentMethodAcceptUpiSetting from './pages/Settings/PaymentMethodAcceptUpiSetting';
-import PaymentMethodAcceptBankSetting from './pages/Settings/PaymentMethodAcceptBankSetting';
-import PaymentMethodAcceptUsdtSetting from './pages/Settings/PaymentMethodAcceptUsdtSetting';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectIsLoggedIn } from './features/auth/authSlice';
 import Team from './pages/Network/Team';
@@ -64,9 +46,9 @@ import { AppDispatch, RootState } from './store/store';
 import { ICompanyInfo } from './types/settings';
 import { getAllCompanyInfoAsync } from './features/settings/settingsSlice';
 import toast from 'react-hot-toast';
-import { API_URL } from './constants';
 import EditSetting from './pages/Settings/GeneralSettings/EditSetting';
 import NotFound from './components/NotFound';
+import DepositRequest from './pages/Fund/DepositRequest';
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { companyInfo } = useSelector((state: RootState) => state.settings);
@@ -305,9 +287,8 @@ function App() {
             </>
           }
         />
-
         <Route
-          path="/setting/general-setting/companyinfo"
+          path="/setting/general-setting/companyInfo-settings"
           element={
             <>
               <PageTitle title="Company Info settings" />
@@ -316,163 +297,6 @@ function App() {
           }
         />
 
-        {/* Settings Routes End*/}
-
-        <Route
-          path="/setting/general-setting/investment/:id"
-          element={
-            <>
-              <PageTitle title="Investment settings" />
-              <InvestmentSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/withdrawal/:id"
-          element={
-            <>
-              <PageTitle title="withdrawal settings" />
-              <WithdrawalSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/fund/:id"
-          element={
-            <>
-              <PageTitle title="Fund settings" />
-              <FundSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/profile/:id"
-          element={
-            <>
-              <PageTitle title="Profile settings" />
-              <ProfileSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/dynamicpages/:id"
-          element={
-            <>
-              <PageTitle title="Dynamicpages settings" />
-              <DynamicpagesSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/reinvestment/:id"
-          element={
-            <>
-              <PageTitle title="Reinvestment settings" />
-              <ReInvestmentSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/account/:id"
-          element={
-            <>
-              <PageTitle title="Account settings" />
-              <AccountSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/registerwithOTP/:id"
-          element={
-            <>
-              <PageTitle title="Register with OTP settings" />
-              <RegisterWithOTPSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/btcaddressOTP/:id"
-          element={
-            <>
-              <PageTitle title="BTC Address OTP settings" />
-              <BtcAddressOTPSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/btcaddresswithOTP/:id"
-          element={
-            <>
-              <PageTitle title="BTC Address With OTP settings" />
-              <BtcAddressWithOTPSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/loginwithOTP/:id"
-          element={
-            <>
-              <PageTitle title="Login with otp settings" />
-              <LoginWithOTPSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/paymentmethod/:id"
-          element={
-            <>
-              <PageTitle title="Payment Method settings" />
-              <PaymentMethodSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/paymentmethodaccept/:id"
-          element={
-            <>
-              <PageTitle title="Payment Accept Method settings" />
-              <PaymentMethodAcceptSetting />
-            </>
-          }
-        />
-
-        <Route
-          path="/setting/general-setting/paymentmethodaccept/upi/:id"
-          element={
-            <>
-              <PageTitle title="UPI settings" />
-              <PaymentMethodAcceptUpiSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/paymentmethodaccept/bank/:id"
-          element={
-            <>
-              <PageTitle title="UPI settings" />
-              <PaymentMethodAcceptBankSetting />
-            </>
-          }
-        />
-        <Route
-          path="/setting/general-setting/paymentmethodaccept/usdt/:id"
-          element={
-            <>
-              <PageTitle title="UPI settings" />
-              <PaymentMethodAcceptUsdtSetting />
-            </>
-          }
-        />
-
-        <Route
-          path="setting/back-up-setting"
-          element={
-            <>
-              <PageTitle title="Database Backup" />
-              <DataBaseBackUp />
-            </>
-          }
-        />
         <Route path="/logout" element={<PageTitle title="Logout" />} />
 
         <Route
@@ -629,6 +453,7 @@ function App() {
             </>
           }
         />
+        {/* Fund */}
         <Route
           path="/fund/add-fund"
           element={
@@ -644,6 +469,15 @@ function App() {
             <>
               <PageTitle title="Contact" />
               <FundTransfer />
+            </>
+          }
+        />
+        <Route
+          path="/fund/deposit-request"
+          element={
+            <>
+              <PageTitle title="Deposit-Request" />
+              <DepositRequest />
             </>
           }
         />

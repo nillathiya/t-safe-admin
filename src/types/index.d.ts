@@ -6,8 +6,9 @@ export * from './common';
 export * from './orders';
 export * from './transaction';
 export * from './support';
-export * from "./user";
-export * from "./package";
-export * from "./newsEvent"
-export * from "./contact-us";
-export * from "./fund";
+export * from './user';
+export * from './package';
+export * from './newsEvent';
+export * from './contact-us';
+export * from './fund';
+export * from './settings';

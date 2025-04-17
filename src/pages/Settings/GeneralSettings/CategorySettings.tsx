@@ -4,7 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../../../store/store';
 import {
   getAdminSettingsAsync,
-  
   getUserSettingsAsync,
 } from '../../../features/settings/settingsSlice';
 import toast from 'react-hot-toast';
@@ -27,7 +26,7 @@ const CategorySettings: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { userSettings, adminSettings } = useSelector(
-    (state: RootState) => state.settings
+    (state: RootState) => state.settings,
   );
 
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +34,7 @@ const CategorySettings: React.FC = () => {
 
   const fetchSettings = useCallback(async () => {
     if (!category) return;
-  
+
     setIsLoading(true);
     try {
       let fetchedSettings: SettingItem[] = [];
@@ -60,7 +59,7 @@ const CategorySettings: React.FC = () => {
           navigate('/setting/general-setting/rank-settings');
           return;
         case 'companyInfo-settings':
-          navigate('/setting/general-setting/companyinfo');
+          navigate('/setting/general-setting/companyInfo-settings');
           return;
         default:
           toast.error('Invalid category');
@@ -73,7 +72,6 @@ const CategorySettings: React.FC = () => {
       setIsLoading(false);
     }
   }, [category, dispatch, navigate, userSettings, adminSettings]);
-  
 
   useEffect(() => {
     fetchSettings();
@@ -90,14 +88,14 @@ const CategorySettings: React.FC = () => {
   const settingTitles = React.useMemo(
     () =>
       Array.from(new Set(settings.map((item) => item.title).filter(Boolean))),
-    [settings]
+    [settings],
   );
 
   const handleEditClick = useCallback(
     (title: string) => {
       navigate(`/setting/general-setting/${category}/${title}`);
     },
-    [navigate, category]
+    [navigate, category],
   );
 
   if (!category) {

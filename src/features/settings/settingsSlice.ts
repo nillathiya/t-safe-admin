@@ -8,13 +8,15 @@ import {
   saveRow,
   getAllCompanyInfo,
   updateCompanyInfo,
-  deleteCompanyInfo,
   getUserSettings,
   getAdminSettings,
   updateUserSetting,
   updateAdminSetting,
+  getAdminSettingsByQuery,
+  getAllComapnyInfoForAdmin,
+  deleteCompanyInfo,
 } from './settingsApi';
-import { ICompanyInfo } from '../../types/settings';
+import { IAdminSettingParams, ICompanyInfo } from '../../types/settings';
 
 interface SettingsState {
   isLoading: boolean;
@@ -28,6 +30,7 @@ interface SettingsState {
   userSettings: any[];
   adminSettings: any[];
   companyInfo: ICompanyInfo[];
+  adminCompanyInfo: ICompanyInfo[];
 }
 
 export interface RootState {
@@ -46,6 +49,7 @@ const initialState: SettingsState = {
   userSettings: [],
   adminSettings: [],
   companyInfo: [],
+  adminCompanyInfo: [],
 };
 
 export const getRankSettingsAsync = createAsyncThunk(
@@ -185,21 +189,6 @@ export const updateCompanyInfoAsync = createAsyncThunk(
   },
 );
 
-export const deleteCompanyInfoAsync = createAsyncThunk(
-  'settings/deleteCompanyInfo',
-  async (settingId: string, { rejectWithValue }) => {
-    try {
-      const data = await deleteCompanyInfo(settingId);
-      return data;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        return rejectWithValue(error.message);
-      } else {
-        return rejectWithValue('An unknown error occurred');
-      }
-    }
-  },
-);
 export const getUserSettingsAsync = createAsyncThunk(
   'settings/getUserSettings',
   async (_, { rejectWithValue }) => {
@@ -265,6 +254,53 @@ export const updateAdminSettingAsync = createAsyncThunk(
   ) => {
     try {
       const data = await updateAdminSetting(params);
+      return data;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      } else {
+        return rejectWithValue('An unknown error occurred');
+      }
+    }
+  },
+);
+
+export const getAdminSettingsByQueryAsync = createAsyncThunk(
+  'settings/getAdminSettingsByQuery',
+  async (params: IAdminSettingParams, { rejectWithValue }) => {
+    try {
+      const data = await getAdminSettingsByQuery(params);
+      return data;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      } else {
+        return rejectWithValue('An unknown error occurred');
+      }
+    }
+  },
+);
+
+export const getAllComapnyInfoForAdminAsync = createAsyncThunk(
+  'settings/getAllComapnyInfoForAdmin',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await getAllComapnyInfoForAdmin();
+      return data;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      } else {
+        return rejectWithValue('An unknown error occurred');
+      }
+    }
+  },
+);
+export const deleteCompanyInfoAsync = createAsyncThunk(
+  'settings/deleteCompanyInfo',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const data = await deleteCompanyInfo(id);
       return data;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -379,10 +415,12 @@ const settingsSlice = createSlice({
       .addCase(updateCompanyInfoAsync.fulfilled, (state, action) => {
         state.isLoading = false;
         const updatedSetting = action.payload?.data;
+
         if (updatedSetting?._id) {
           const index = state.companyInfo.findIndex(
             (item) => item._id === updatedSetting._id,
           );
+
           if (index !== -1) {
             // Update the existing item
             state.companyInfo[index] = {
@@ -393,27 +431,15 @@ const settingsSlice = createSlice({
             // If not found, add it (though this shouldn't happen on update)
             state.companyInfo.push(updatedSetting);
           }
+
+          // ✅ Fix: use `.map()` instead of treating it like a function
+          state.adminCompanyInfo = state.adminCompanyInfo.map((setting) =>
+            setting._id === updatedSetting._id ? updatedSetting : setting,
+          );
         }
       })
       .addCase(updateCompanyInfoAsync.rejected, (state) => {
         state.isLoading = false;
-      })
-      // deleteCompanyInfoAsync
-      .addCase(deleteCompanyInfoAsync.pending, (state) => {
-        state.isLoading = true;
-      })
-      .addCase(deleteCompanyInfoAsync.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const deletedSetting = action.payload?.data;
-        if (deletedSetting?._id) {
-          state.companyInfo = state.companyInfo.filter(
-            (data) => data._id !== deletedSetting._id,
-          );
-        }
-      })
-      .addCase(deleteCompanyInfoAsync.rejected, (state, action) => {
-        state.isLoading = false;
-        console.error('Delete failed:', action.error.message);
       })
       // getUserSettingsAsync
       .addCase(getUserSettingsAsync.pending, (state) => {
@@ -485,6 +511,17 @@ const settingsSlice = createSlice({
         }
       })
       .addCase(updateAdminSettingAsync.rejected, (state) => {
+        state.isLoading = false;
+      })
+      // getAllComapnyInfoForAdminAsync
+      .addCase(getAllComapnyInfoForAdminAsync.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getAllComapnyInfoForAdminAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.adminCompanyInfo = action.payload.data;
+      })
+      .addCase(getAllComapnyInfoForAdminAsync.rejected, (state) => {
         state.isLoading = false;
       });
   },

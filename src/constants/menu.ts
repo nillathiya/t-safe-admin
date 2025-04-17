@@ -120,6 +120,12 @@ export const MENU: {
         path: '/fund/fund-transfer',
         icon: 'FUND',
       },
+      {
+        id: generateUniqueId(),
+        title: 'Deposit Request',
+        path: '/fund/deposit-request',
+        icon: 'FUND',
+      },
     ],
   },
 

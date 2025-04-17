@@ -29,6 +29,44 @@
     hover:bg-blue-700 transition active:scale-95
     dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200;
   }
+  .btn-primary {
+    @apply w-full px-6 py-5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:bg-gray-600;
+  }
+  .btn-outline {
+    @apply w-full sm:w-auto px-6 py-5 bg-transparent border rounded-md transition-colors 
+         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900;
+  }
+  .btn-green-filled {
+    @apply flex items-center justify-center rounded-md bg-green-500 text-white shadow-md transition-all duration-300 disabled:opacity-50 outline-none;
+
+    @apply hover:bg-green-600 hover:shadow-lg;
+
+    @apply focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2;
+
+    @apply active:bg-green-700 active:shadow-sm;
+  }
+
+  .btn-indigo-filled {
+    @apply flex items-center justify-center rounded-md bg-indigo-500  text-white shadow-md transition-all duration-300 disabled:opacity-50;
+
+    @apply hover:bg-indigo-600 hover:shadow-lg;
+
+    @apply focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2;
+
+    @apply active:bg-indigo-700 active:shadow-sm;
+  }
+
+  .btn-outline-indigo {
+    @apply border border-indigo-400 text-indigo-300 bg-transparent hover:bg-indigo-400/20 hover:text-white focus:ring-indigo-400;
+  }
+
+  .btn-outline-blue {
+    @apply border border-blue-400 text-blue-300 hover:bg-blue-400/20 hover:text-white focus:ring-blue-400;
+  }
+
+  .btn-outline-gray {
+    @apply border border-gray-500 text-gray-300 bg-transparent hover:bg-gray-700/30 hover:text-white focus:ring-gray-400;
+  }
 }
 
 @layer utilities {

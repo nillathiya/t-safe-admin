@@ -8,11 +8,19 @@ export interface RankSettings {
 }
 
 export interface ICompanyInfo {
-  _id?: string;
+  _id: string;
+  name: string;
   title: string;
-  label: string;
-  value: string;
+  slug: string;
+  value?: string;
+  type:string;
+  description?: string;
+  adminStatus: number;
   status: number;
   createdAt: string;
   updatedAt: string;
+}
+
+interface IAdminSettingParams {
+  [key: string]: string | number | boolean | null | undefined; // Or any other types based on your needs
 }

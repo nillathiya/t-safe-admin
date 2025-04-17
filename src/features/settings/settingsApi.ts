@@ -2,7 +2,11 @@ import { apiClient } from '../../api/apiClient';
 import { ROUTES } from '../../api/routes';
 import { AxiosError } from 'axios';
 import { ApiResponse } from '../../types';
-import { ICompanyInfo, RankSettings } from '../../types/settings';
+import {
+  IAdminSettingParams,
+  ICompanyInfo,
+  RankSettings,
+} from '../../types/settings';
 
 // Add a new rank setting (column)
 export const createRankSetting = async (
@@ -23,7 +27,7 @@ export const getRankSettings = async (): Promise<
   ApiResponse<RankSettings[]>
 > => {
   try {
-    const response = await apiClient.post(ROUTES.SETTINGS.GET_RANK_SETTINGS);
+    const response = await apiClient.get(ROUTES.SETTINGS.GET_RANK_SETTINGS);
     return response.data;
   } catch (error: unknown) {
     if (error instanceof AxiosError) {
@@ -39,7 +43,7 @@ export const updateRankSetting = async (
   formData: any,
 ): Promise<ApiResponse<RankSettings>> => {
   try {
-    const response = await apiClient.post(ROUTES.SETTINGS.UPDATE(id), formData);
+    const response = await apiClient.put(ROUTES.SETTINGS.UPDATE(id), formData);
     return response.data;
   } catch (error: unknown) {
     if (error instanceof AxiosError) {
@@ -54,7 +58,7 @@ export const deleteRankSetting = async (
   id: string,
 ): Promise<ApiResponse<RankSettings>> => {
   try {
-    const response = await apiClient.post(ROUTES.SETTINGS.DELETE(id));
+    const response = await apiClient.delete(ROUTES.SETTINGS.DELETE(id));
     return response.data;
   } catch (error: unknown) {
     if (error instanceof AxiosError) {
@@ -95,7 +99,9 @@ export const getAllCompanyInfo = async (): Promise<
   ApiResponse<ICompanyInfo[]>
 > => {
   try {
-    const response = await apiClient.post(ROUTES.COMPANY_INFO.GET_ALL);
+    const response = await apiClient.post(
+      ROUTES.SETTINGS.GET_COMPANY_INFO_SETTINGS,
+    );
     return response.data;
   } catch (error: unknown) {
     if (error instanceof AxiosError) {
@@ -113,8 +119,8 @@ export const updateCompanyInfo = async ({
   formData: any;
 }): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiClient.post(
-      ROUTES.COMPANY_INFO.UPDATE(id),
+    const response = await apiClient.put(
+      ROUTES.SETTINGS.UPDATE_COMPANY_INFO_SETTING(id),
       formData,
       {
         headers: {
@@ -133,12 +139,12 @@ export const updateCompanyInfo = async ({
 };
 
 export const deleteCompanyInfo = async (
-  settingId: string,
+  id: string,
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiClient.post(ROUTES.COMPANY_INFO.DELETE, {
-      settingId,
-    });
+    const response = await apiClient.put(
+      ROUTES.SETTINGS.DELETE_COMPANY_INFO_SETTING(id),
+    );
 
     return response.data;
   } catch (error: unknown) {
@@ -164,7 +170,7 @@ export const getUserSettings = async (): Promise<ApiResponse<any>> => {
 
 export const getAdminSettings = async (): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiClient.post(ROUTES.SETTINGS.GET_ADMIN_SETTINGS);
+    const response = await apiClient.get(ROUTES.SETTINGS.GET_ADMIN_SETTINGS);
 
     return response.data;
   } catch (error: unknown) {
@@ -205,7 +211,7 @@ export const updateAdminSetting = async ({
   formData: any;
 }): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiClient.post(
+    const response = await apiClient.put(
       ROUTES.SETTINGS.UPDATE_ADMIN_SETTING(id),
       formData,
     );
@@ -216,5 +222,39 @@ export const updateAdminSetting = async ({
       throw new Error(error.response?.data?.message || 'An error occurred.');
     }
     throw new Error('Update Admin setting failed. Please try again later.');
+  }
+};
+
+export const getAdminSettingsByQuery = async (
+  params: IAdminSettingParams,
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await apiClient.get(
+      ROUTES.SETTINGS.GET_ADMIN_BY_QUERY(params),
+    );
+
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof AxiosError) {
+      throw new Error(error.response?.data?.message || 'An error occurred.');
+    }
+    throw new Error('Update Admin setting failed. Please try again later.');
+  }
+};
+
+export const getAllComapnyInfoForAdmin = async (): Promise<
+  ApiResponse<ICompanyInfo[]>
+> => {
+  try {
+    const response = await apiClient.get(
+      ROUTES.SETTINGS.GET_COMPANY_INFO_SETTINGS,
+    );
+
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof AxiosError) {
+      throw new Error(error.response?.data?.message || 'An error occurred.');
+    }
+    throw new Error('Get Company setting failed. Please try again later.');
   }
 };

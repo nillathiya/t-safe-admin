@@ -56,9 +56,12 @@ export const createNewsEventAsync = createAsyncThunk(
 
 export const updateNewsEventAsync = createAsyncThunk(
   'newsEvent/updateNewsEvent',
-  async (formData: FormData, { rejectWithValue }) => {
+  async (
+    { id, formData }: { id: string; formData: FormData },
+    { rejectWithValue },
+  ) => {
     try {
-      const data = await updateNewsEvent(formData);
+      const data = await updateNewsEvent(id, formData);
       return data;
     } catch (error) {
       if (error instanceof Error) {

@@ -7,7 +7,7 @@ import {
   replyMessage,
   updateTicketStatus,
 } from './supportApi';
-import { Pagination, Support, TicketMessage, Tickets } from '../../types';
+import { ITicketMsgQuery, Pagination, Support, TicketMessage, Tickets } from '../../types';
 
 interface SupportState {
   isLoading: boolean;
@@ -102,7 +102,7 @@ export const fetchMessagesAsync = createAsyncThunk(
   async (
     params: {
       ticketId: string;
-      formData: any;
+      query: ITicketMsgQuery;
     },
     { rejectWithValue },
   ) => {

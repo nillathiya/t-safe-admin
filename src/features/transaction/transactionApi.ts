@@ -1,7 +1,13 @@
 import { apiClient } from '../../api/apiClient';
 import { ROUTES } from '../../api/routes';
 import { AxiosError } from 'axios';
-import { ApiResponse, FundTransaction, IncomeTransaction } from '../../types';
+import {
+  ApiResponse,
+  IFundTransaction,
+  IFundTransactionParams,
+  IncomeTransaction,
+  IUpdateUserFundTransactionPayload,
+} from '../../types';
 
 export const getAllIncomeTransaction = async (
   formData: any,
@@ -24,7 +30,7 @@ export const getAllIncomeTransaction = async (
 
 export const directTransferFund = async (
   formData: any,
-): Promise<ApiResponse<FundTransaction>> => {
+): Promise<ApiResponse<IFundTransaction>> => {
   try {
     const response = await apiClient.post(
       ROUTES.TRANSACTION.FUND.DIRECT_TRANSFER,
@@ -39,14 +45,33 @@ export const directTransferFund = async (
   }
 };
 
-export const getAdminFundTransaction = async ({
-  txType,
-}: {
-  txType: string;
-}): Promise<ApiResponse<FundTransaction[]>> => {
+export const getFundTransactions = async (
+  params: IFundTransactionParams,
+): Promise<ApiResponse<IFundTransaction[]>> => {
   try {
     const response = await apiClient.get(
-      ROUTES.TRANSACTION.FUND.GET_ALL(txType));
+      ROUTES.TRANSACTION.FUND.GET_ALL(params),
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof AxiosError) {
+      throw new Error(error.response?.data?.message || 'An error occurred.');
+    }
+    throw new Error(
+      'Get Admin fund transaction failed. Please try again later.',
+    );
+  }
+};
+
+export const updateUserFundTransaction = async (
+  id: string,
+  formData: IUpdateUserFundTransactionPayload,
+): Promise<ApiResponse<IFundTransaction>> => {
+  try {
+    const response = await apiClient.put(
+      ROUTES.TRANSACTION.FUND.UPDATE_USER_TRANSACTION(id),
+      formData,
+    );
     return response.data;
   } catch (error: unknown) {
     if (error instanceof AxiosError) {

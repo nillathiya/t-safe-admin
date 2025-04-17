@@ -6,15 +6,16 @@ import 'datatables.net-select-dt';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
-import { DEFAULT_PER_PAGE_ITEMS } from '../../constants';
+import { DEFAULT_PER_PAGE_ITEMS, FUND_TX_TYPE } from '../../constants';
 import { formatDate } from '../../utils/dateUtils';
 import Skeleton from '../../components/ui/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
-import { getAdminFundTransactionAsync } from '../../features/transaction/transactionSlice';
+import { getFundTransactionsAsync } from '../../features/transaction/transactionSlice';
+import { formatLabel } from '../../utils/stringUtils';
 
 const FundTransfer: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { adminFundTransactions, isLoading } = useSelector(
+  const { fundTransactions, isLoading } = useSelector(
     (state: RootState) => state.transaction,
   );
   const tableRef = useRef<HTMLTableElement>(null);
@@ -25,8 +26,8 @@ const FundTransfer: React.FC = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const params = { txType: 'direct_fund_transfer' };
-        await dispatch(getAdminFundTransactionAsync(params));
+        const params = { txType: FUND_TX_TYPE.ADMIN_FUND_TRANSFER };
+        await dispatch(getFundTransactionsAsync(params));
       } catch (error: any) {
         toast.error(error?.message || 'Server error');
       }
@@ -36,7 +37,7 @@ const FundTransfer: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!tableRef.current || isLoading || adminFundTransactions.length === 0)
+    if (!tableRef.current || isLoading || fundTransactions.length === 0)
       return;
 
     setTimeout(() => {
@@ -57,7 +58,7 @@ const FundTransfer: React.FC = () => {
         if (tableRef.current) tableRef.current.dataset.dtInstance = 'true';
       }
     }, 300);
-  }, [adminFundTransactions, isLoading]);
+  }, [fundTransactions, isLoading]);
 
   return (
     <div>
@@ -70,6 +71,7 @@ const FundTransfer: React.FC = () => {
                 <th className="table-header">S No.</th>
                 <th className="table-header">USER</th>
                 <th className="table-header">Amount({companyCurrency})</th>
+                <th className="table-header">Debit/Credit</th>
                 <th className="table-header">WALLET TYPE</th>
                 <th className="table-header">Date</th>
               </tr>
@@ -89,7 +91,7 @@ const FundTransfer: React.FC = () => {
                         ))}
                     </tr>
                   ))
-              ) : adminFundTransactions.length === 0 ? (
+              ) : fundTransactions.length === 0 ? (
                 <tr>
                   <td
                     colSpan={13}
@@ -99,7 +101,7 @@ const FundTransfer: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                adminFundTransactions.map((tx: any, index) => (
+                fundTransactions.map((tx: any, index) => (
                   <tr key={index}>
                     <td className="table-cell">{index + 1}</td>
                     <td className="table-cell">
@@ -113,7 +115,10 @@ const FundTransfer: React.FC = () => {
                       {companyCurrency}
                       {tx.amount || 'N/A'}
                     </td>
-                    <td className="table-cell">{tx.walletType || 'N/A'}</td>
+                    <td className="table-cell">{tx.debitCredit || 'N/A'}</td>
+                    <td className="table-cell">
+                      {formatLabel(tx.walletType) || 'N/A'}
+                    </td>
 
                     <td className="table-cell">{formatDate(tx.createdAt)}</td>
                   </tr>

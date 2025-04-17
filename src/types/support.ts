@@ -46,3 +46,7 @@ export interface TicketMessage {
   text: string;
   isRead: boolean;
 }
+
+export interface ITicketMsgQuery {
+  role: string;
+}

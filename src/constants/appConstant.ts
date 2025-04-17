@@ -1,5 +1,4 @@
 // Env constants
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export const CRYPTO_SECRET_KEY = import.meta.env.VITE_APP_CRYPTO_SECRET_KEY;
 export const USER_API_URL = import.meta.env.VITE_USER_API_URL;
 

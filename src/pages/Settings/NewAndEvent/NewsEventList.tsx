@@ -13,9 +13,10 @@ import {
 } from '../../../features/news-event/newsEventSlice';
 import toast from 'react-hot-toast';
 import { NewsEvent } from '../../../types';
-import { API_URL, ICONS } from '../../../constants';
+import { ICONS } from '../../../constants';
 import Icon from '../../../components/Icons/Icon';
 import Loader from '../../../common/Loader';
+import { API_URL } from '../../../api/routes';
 
 function NewsEventList() {
   const dispatch = useDispatch<AppDispatch>();
@@ -80,7 +81,7 @@ function NewsEventList() {
       filteredNewsEventData: filtered,
       latestNewsEvents: activeTab === 'news' ? filtered.slice(0, 5) : [],
     };
-  }, [activeTab,newsEvents]);
+  }, [activeTab, newsEvents]);
 
   // Select the first item by default
   useEffect(() => {
@@ -167,7 +168,6 @@ function NewsEventList() {
     const updateImageIndex: number[] = [];
     const formData = new FormData();
 
-    formData.append('id', selectedNews._id);
     formData.append('title', selectedNews.title);
     formData.append('description', selectedNews.description);
     if (selectedNews.hotlinks.length > 0) {
@@ -206,7 +206,11 @@ function NewsEventList() {
     formData.append('updateImageIndex', JSON.stringify(updateImageIndex));
 
     try {
-      await dispatch(updateNewsEventAsync(formData)).unwrap();
+      const payload = {
+        id: selectedNews._id,
+        formData,
+      };
+      await dispatch(updateNewsEventAsync(payload)).unwrap();
       toast.success('News updated successfully');
     } catch (error: any) {
       toast.error(error || 'Server Error');

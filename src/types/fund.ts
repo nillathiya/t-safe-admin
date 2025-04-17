@@ -26,8 +26,31 @@ export interface IDepositAccount {
   currencyKey: string;
 }
 
+export interface IncomeTransaction {
+  txUCode?: {
+    username: string;
+    name: string;
+  };
+  uCode?: {
+    username: string;
+    name: string;
+  };
+  txType: string;
+  walletType: string;
+  source: string;
+  amount: number;
+  txCharge: number;
+  currentWalletBalance: number;
+  postWalletBalance: number;
+  remark: string;
+  response: string;
+  status: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface IFundTransaction {
-  _id?: string;
+  _id: string;
   txUCode?: {
     _id: string;
     username: string;
@@ -43,13 +66,16 @@ export interface IFundTransaction {
   fromWalletType?: string;
   walletType?: string; // "FUND_WALLET", "MAIN_WALLET"
   amount?: number;
+  tds?: number; // Tax Deducted at Source (if applicable)
+  cryptoDetails?: number;
+  wPool?: number;
   txCharge?: number;
   paymentSlip?: string;
   txNumber?: string;
   postWalletBalance?: number;
   currentWalletBalance?: number;
-  method?: string;
-  account?: string;
+  method?: string | { _id: string; name?: string };
+  account?: string | { _id: string; name?: string };
   withdrawalAccount?:
     | string
     | {
@@ -64,7 +90,18 @@ export interface IFundTransaction {
       };
   response?: string;
   isRetrieveFund: boolean;
-  status: number; // 0, 1, 2
+  remark?: string;
+  reason?: string;
+  status: number; // Status: 0 (Pending), 1 (Success), 2 (Failed)
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface IFundTransactionParams {
+  [key: string]: string | number | boolean | null | undefined; // Or any other types based on your needs
+}
+
+export interface IUpdateUserFundTransactionPayload {
+  status: number;
+  reason?: string;
 }

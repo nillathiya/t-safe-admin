@@ -23,7 +23,7 @@ export const createNewsEvent = async (
 
 export const getAllNewsEvents = async (): Promise<ApiResponse<NewsEvent[]>> => {
   try {
-    const response = await apiClient.post(ROUTES.NEWS_EVENT.GET_ALL);
+    const response = await apiClient.get(ROUTES.NEWS_EVENT.GET_ALL);
     return response.data;
   } catch (error) {
     if (error instanceof AxiosError) {
@@ -33,11 +33,11 @@ export const getAllNewsEvents = async (): Promise<ApiResponse<NewsEvent[]>> => {
   }
 };
 
-export const updateNewsEvent = async (
+export const updateNewsEvent = async (id:string,
   formData: FormData,
 ): Promise<ApiResponse<NewsEvent>> => {
   try {
-    const response = await apiClient.post(ROUTES.NEWS_EVENT.UPDATE, formData, {
+    const response = await apiClient.put(ROUTES.NEWS_EVENT.UPDATE(id), formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

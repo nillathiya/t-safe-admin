@@ -11,9 +11,9 @@ import {
 import toast from 'react-hot-toast';
 import Breadcrumb from '../../../components/Breadcrumbs/Breadcrumb';
 import Loader from '../../../common/Loader';
-import { API_URL } from '../../../constants';
 import './setting.css';
 import Select from 'react-select';
+import { API_URL } from '../../../api/routes';
 
 interface Option {
   key: string;
@@ -34,10 +34,44 @@ interface SettingItem {
     | 'option'
     | 'array'
     | 'json_array'
-    | 'boolean';
+    | 'boolean'
+    | 'single-element-array'
+    | 'number';
   options?: string[] | string | Option[] | boolean;
 }
 
+function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
+  // Handle undefined or non-array cases
+  if (!options || !Array.isArray(options)) {
+    return 'unknown';
+  }
+
+  // If array is empty, type cannot be determined reliably
+  if (options.length === 0) {
+    return 'unknown';
+  }
+
+  // Check the type of the first element
+  const firstElement = options[0];
+
+  if (typeof firstElement === 'string') {
+    // Verify all elements are strings
+    const allStrings = options.every((item: any) => typeof item === 'string');
+    return allStrings ? 'string[]' : 'unknown';
+  } else if (
+    typeof firstElement === 'object' &&
+    firstElement !== null &&
+    'key' in firstElement
+  ) {
+    // Verify all elements are objects with a 'key' property
+    const allOptions = options.every(
+      (item: any) => typeof item === 'object' && item !== null && 'key' in item,
+    );
+    return allOptions ? 'Option[]' : 'unknown';
+  }
+
+  return 'unknown';
+}
 const EditSetting: React.FC = () => {
   const { category, title } = useParams<{ category: string; title: string }>();
   const navigate = useNavigate();
@@ -63,18 +97,22 @@ const EditSetting: React.FC = () => {
         case 'rank-settings':
           navigate('/setting/general-setting/rank-settings');
           break;
-        case 'user-settings':
-          await dispatch(getUserSettingsAsync()).unwrap();
-          setSettings(userSettings);
+        case 'user-settings': {
+          const result = await dispatch(getUserSettingsAsync()).unwrap();
+          setSettings(result.data); // Use API response directly
           break;
-        case 'admin-settings':
+        }
+        case 'admin-settings': {
           if (adminSettings.length === 0) {
-            await dispatch(getAdminSettingsAsync()).unwrap();
+            const result = await dispatch(getAdminSettingsAsync()).unwrap();
+            setSettings(result.data); // Use API response directly
+          } else {
+            setSettings(adminSettings); // Use existing adminSettings
           }
-          setSettings(adminSettings);
           break;
+        }
         case 'companyInfo-settings':
-          navigate('/setting/general-setting/companyinfo');
+          navigate('/setting/general-setting/companyInfo-settings');
           break;
         default:
           toast.error('Invalid category');
@@ -84,7 +122,7 @@ const EditSetting: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [category, dispatch, adminSettings, navigate]); // Removed userSettings
 
   useEffect(() => {
     fetchSettings();
@@ -92,25 +130,35 @@ const EditSetting: React.FC = () => {
 
   useEffect(() => {
     console.log('settings', settings);
+    // Only process settings if they exist and title is provided
     if (settings.length > 0 && title) {
       const matchedSettings = settings.filter(
         (setting) => setting.title.trim() === title.trim(),
       );
+
+      if (matchedSettings.length === 0) {
+        console.warn('No settings found for title:', title);
+        toast.error('No settings found for the specified title');
+        return;
+      }
+
       setEditableSettings(matchedSettings);
+
       const newFormData: Record<
         string,
         string | string[] | Option[] | File | boolean
       > = {};
       const newFilePreviews: Record<string, string> = {};
+
       matchedSettings.forEach((setting) => {
         if (setting.type === 'array' && Array.isArray(setting.value)) {
-          // Convert initial value (array of objects) to array of keys
           newFormData[setting._id] = (setting.value as Option[]).map(
             (opt) => opt.key,
           );
         } else {
           newFormData[setting._id] = setting.value;
         }
+
         if (setting.type === 'image' && setting.value) {
           newFilePreviews[setting._id] = (setting.value as string).startsWith(
             '/uploads',
@@ -119,24 +167,60 @@ const EditSetting: React.FC = () => {
             : (setting.value as string);
         }
       });
+
       setFormData(newFormData);
       setFilePreviews(newFilePreviews);
     }
   }, [settings, title]);
-
   const handleInputChange = useCallback(
-    (id: string, value: string | string[] | File) => {
-      setFormData((prev) => ({ ...prev, [id]: value }));
+    (id: string, value: string | string[] | File, setting: SettingItem) => {
+      setFormData((prev) => {
+        let newValue: any = value;
+
+        switch (setting.type) {
+          case 'number':
+            newValue = parseFloat(value as string);
+            break;
+          // case 'file':
+          //   newValue = value as File;
+          //   break;
+          // case 'multi-select':
+          //   newValue = value as string[];
+          //   break;
+          default:
+            newValue = value;
+        }
+
+        return { ...prev, [id]: newValue };
+      });
     },
     [],
   );
 
-  const handleSelectChange = useCallback((id: string, selectedOptions: any) => {
-    const selectedValues = selectedOptions
-      ? selectedOptions.map((option: { value: string }) => option.value)
-      : [];
-    setFormData((prev) => ({ ...prev, [id]: selectedValues }));
-  }, []);
+  const handleSelectChange = useCallback(
+    (id: string, selectedOptions: any, setting: any) => {
+      // const selectedValues = selectedOptions
+      //   ? selectedOptions.map((option: { value: string }) => option.value)
+      //   : [];
+
+      let selectedValues: string[] | string;
+
+      if (setting.type === 'array') {
+        // Multi-select: store array of values
+        selectedValues = selectedOptions
+          ? selectedOptions.map((option: { value: string }) => option.value)
+          : [];
+      } else if (setting.type === 'single-element-array') {
+        // Single-select: store single value or undefined
+        selectedValues =
+          selectedOptions && !Array.isArray(selectedOptions)
+            ? selectedOptions.value
+            : '';
+      }
+      setFormData((prev) => ({ ...prev, [id]: selectedValues }));
+    },
+    [],
+  );
 
   const handleFileChange = useCallback(
     (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,6 +257,7 @@ const EditSetting: React.FC = () => {
       console.log('setting', setting);
       console.log('selected value', value);
 
+      // handle value if value is in array ["fund_wallet"];
       if (
         Array.isArray(value) &&
         value.every((v) => typeof v === 'string') &&
@@ -184,6 +269,28 @@ const EditSetting: React.FC = () => {
         );
       }
 
+      // handle value if value is in single "fund_wallet"
+      if (!Array.isArray(value) && typeof value === 'string') {
+        const selectedKeys = value;
+
+        // Check if setting.options is defined and an array
+        if (setting.options && Array.isArray(setting.options)) {
+          const optionsType = checkOptionsType(setting.options);
+
+          if (optionsType === 'Option[]') {
+            // Handle Option[] array
+            value = (setting.options as Option[]).filter((item: Option) =>
+              selectedKeys.includes(item.key),
+            );
+          } else if (optionsType === 'string[]') {
+            // Handle string[] array
+            value = (setting.options as string[]).filter((item: string) =>
+              selectedKeys.includes(item),
+            );
+          }
+          // If 'unknown', you can decide to skip or handle differently
+        }
+      }
       console.log('value', value);
       try {
         let result;
@@ -273,7 +380,8 @@ const EditSetting: React.FC = () => {
     return <div className="p-6">Invalid category or title</div>;
   }
 
-  console.log('formData', formData);
+  // console.log('formData', formData);
+  console.log('editableSettings', editableSettings);
   return (
     <>
       <Breadcrumb pageName={`Edit ${title} (${category})`} />
@@ -281,7 +389,7 @@ const EditSetting: React.FC = () => {
         {isLoading ? (
           <Loader loader="ClipLoader" size={50} color="blue" />
         ) : editableSettings.length > 0 ? (
-          <div className="max-w-full overflow-x-auto custom-scrollbar">
+          <div className="max-w-full overflow-auto custom-scrollbar">
             <table className="w-full table-auto">
               <thead>
                 <tr className="bg-gray-2 text-left dark:bg-meta-4">
@@ -308,12 +416,18 @@ const EditSetting: React.FC = () => {
                     <td className="py-5 px-2">{index + 1}</td>
                     <td className="py-5 px-2">{setting.name}</td>
                     <td className="py-5 px-2">
-                      {setting.type.trim() === 'text' && (
+                      {(setting.type.trim() === 'text' ||
+                        setting.type === 'number' ||
+                        setting.type.trim() === 'string') && (
                         <input
                           type="text"
                           value={(formData[setting._id] as string) || ''}
                           onChange={(e) =>
-                            handleInputChange(setting._id, e.target.value)
+                            handleInputChange(
+                              setting._id,
+                              e.target.value,
+                              setting,
+                            )
                           }
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
@@ -339,7 +453,11 @@ const EditSetting: React.FC = () => {
                           type="date"
                           value={(formData[setting._id] as string) || ''}
                           onChange={(e) =>
-                            handleInputChange(setting._id, e.target.value)
+                            handleInputChange(
+                              setting._id,
+                              e.target.value,
+                              setting,
+                            )
                           }
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
@@ -625,7 +743,7 @@ const EditSetting: React.FC = () => {
                                 : []
                             }
                             onChange={(selected) =>
-                              handleSelectChange(setting._id, selected)
+                              handleSelectChange(setting._id, selected, setting)
                             }
                             placeholder="Select options..."
                             styles={{
@@ -658,6 +776,137 @@ const EditSetting: React.FC = () => {
                                   })
                                   .filter(Boolean)
                                   .join(', ') || 'None'
+                              : 'None'}
+                          </p>
+                        </div>
+                      )}
+                      {setting.type === 'single-element-array' && (
+                        <div>
+                          <Select
+                            isClearable
+                            options={
+                              Array.isArray(setting.options)
+                                ? setting.options.map((opt) => {
+                                    if (
+                                      typeof opt === 'object' &&
+                                      'key' in opt &&
+                                      'label' in opt
+                                    ) {
+                                      return {
+                                        value: opt.key,
+                                        label: opt.label,
+                                      };
+                                    }
+                                    return {
+                                      value: String(opt),
+                                      label: String(opt),
+                                    };
+                                  })
+                                : []
+                            }
+                            value={(() => {
+                              const rawValue = formData[setting._id];
+
+                              if (typeof rawValue === 'string') {
+                                // Handle case where value is a single string key
+                                const opt = Array.isArray(setting.options)
+                                  ? setting.options.find(
+                                      (o) =>
+                                        (typeof o === 'object' &&
+                                          o.key === rawValue) ||
+                                        o === rawValue,
+                                    )
+                                  : null;
+
+                                const result = opt
+                                  ? {
+                                      value:
+                                        typeof opt === 'object' ? opt.key : opt,
+                                      label:
+                                        typeof opt === 'object'
+                                          ? opt.label
+                                          : opt,
+                                    }
+                                  : null;
+
+                                console.log(
+                                  `Single-select: id=${setting._id}, key=${rawValue}, value=`,
+                                  result,
+                                );
+                                return result;
+                              }
+
+                              if (
+                                Array.isArray(rawValue) &&
+                                rawValue.length > 0 &&
+                                typeof rawValue[0] === 'object'
+                              ) {
+                                // Handle array of objects (e.g., [{ key: 'something' }])
+                                const selectedKey = rawValue[0].key;
+
+                                const opt = Array.isArray(setting.options)
+                                  ? setting.options.find(
+                                      (o) =>
+                                        (typeof o === 'object' &&
+                                          o.key === selectedKey) ||
+                                        o === selectedKey,
+                                    )
+                                  : null;
+
+                                const result = opt
+                                  ? {
+                                      value:
+                                        typeof opt === 'object' ? opt.key : opt,
+                                      label:
+                                        typeof opt === 'object'
+                                          ? opt.label
+                                          : opt,
+                                    }
+                                  : null;
+
+                                console.log(
+                                  `Array-based value: id=${setting._id}, key=${selectedKey}, value=`,
+                                  result,
+                                );
+                                return result;
+                              }
+
+                              return null;
+                            })()}
+                            onChange={(selected) =>
+                              handleSelectChange(setting._id, selected, setting)
+                            }
+                            placeholder="Select an option..."
+                            styles={{
+                              container: (base) => ({
+                                ...base,
+                                width: 300,
+                                zIndex: 999,
+                              }),
+                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                            menuPortalTarget={document.body}
+                            className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
+                          />
+                          <p>
+                            Selected Value:{' '}
+                            {formData[setting._id]
+                              ? (() => {
+                                  const key = formData[setting._id];
+                                  const opt = Array.isArray(setting.options)
+                                    ? setting.options.find(
+                                        (o) =>
+                                          (typeof o === 'object' &&
+                                            o.key === key) ||
+                                          o === key,
+                                      )
+                                    : null;
+                                  return opt
+                                    ? typeof opt === 'object'
+                                      ? opt.label
+                                      : opt
+                                    : 'None';
+                                })()
                               : 'None'}
                           </p>
                         </div>

@@ -45,7 +45,7 @@ const settingsPersistConfig = {
   key: 'settings',
   storage,
   transforms: [transactionEncryptTransform],
-  whitelist: ['companyInfo',"userSettings","adminSettings"],
+  whitelist: ['companyInfo'],
 };
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedSettingsReducer = persistReducer(
@@ -65,6 +65,14 @@ export const store = configureStore({
     settings: persistedSettingsReducer,
     newsEvent: newsEventReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore serialization checks for redux-persist actions
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActionPaths: ['register', 'rehydrate'],
+      },
+    }),
 });
 
 export const persistor = persistStore(store);

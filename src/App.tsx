@@ -49,6 +49,7 @@ import toast from 'react-hot-toast';
 import EditSetting from './pages/Settings/GeneralSettings/EditSetting';
 import NotFound from './components/NotFound';
 import DepositRequest from './pages/Fund/DepositRequest';
+import DepositHistory from './pages/Fund/DepositHistory';
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { companyInfo } = useSelector((state: RootState) => state.settings);
@@ -481,6 +482,16 @@ function App() {
             </>
           }
         />
+        <Route
+          path="/fund/deposit-history"
+          element={
+            <>
+              <PageTitle title="Deposit-History" />
+              <DepositHistory />
+            </>
+          }
+        />
+
         <Route
           path="/password/change-password"
           element={

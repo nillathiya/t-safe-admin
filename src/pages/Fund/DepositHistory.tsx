@@ -20,9 +20,9 @@ import {
   IUpdateUserFundTransactionPayload,
 } from '../../types';
 import { API_URL } from '../../api/routes';
-import { useCompanyCurrency, useCompanyInfo } from '../../hooks/useCompanyInfo';
+import { useCompanyCurrency } from '../../hooks/useCompanyInfo';
 
-const DepositRequest: React.FC = () => {
+const DepositHistory: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { fundTransactions, isLoading } = useSelector(
     (state: RootState) => state.transaction,
@@ -37,13 +37,14 @@ const DepositRequest: React.FC = () => {
   const [rejectReason, setRejectReason] = useState(''); // Rejection reason input
 
   const companyCurrency = useCompanyCurrency();
+
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setIsInitialLoading(true);
         const params = {
           txType: FUND_TX_TYPE.FUND_ADD,
-          status: 0,
+          status: '1,2',
           depositAccountType: 'manual',
         };
         await dispatch(getFundTransactionsAsync(params)).unwrap();
@@ -249,7 +250,7 @@ const DepositRequest: React.FC = () => {
 
   return (
     <div>
-      <Breadcrumb pageName="Deposit Request" />
+      <Breadcrumb pageName="Deposit History" />
       <div className="table-bg">
         <div className="card-body overflow-x-auto">
           <table ref={tableRef} className="table bordered-table display">
@@ -408,7 +409,7 @@ const DepositRequest: React.FC = () => {
                             ? handleReject()
                             : setShowRejectReason(true)
                         }
-                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors text-center"
                       >
                         {showRejectReason ? 'Submit Rejection' : 'Reject'}
                       </button>
@@ -420,7 +421,7 @@ const DepositRequest: React.FC = () => {
                       setShowRejectReason(false);
                       setRejectReason('');
                     }}
-                    className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                    className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors text-center"
                   >
                     Close
                   </button>
@@ -463,4 +464,4 @@ const DepositRequest: React.FC = () => {
   );
 };
 
-export default DepositRequest;
+export default DepositHistory;

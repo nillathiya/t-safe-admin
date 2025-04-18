@@ -126,6 +126,12 @@ export const MENU: {
         path: '/fund/deposit-request',
         icon: 'FUND',
       },
+      {
+        id: generateUniqueId(),
+        title: 'Deposit Histroy',
+        path: '/fund/deposit-history',
+        icon: 'FUND',
+      },
     ],
   },
 

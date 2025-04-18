@@ -132,6 +132,12 @@ export const MENU: {
         path: '/fund/deposit-history',
         icon: 'FUND',
       },
+      {
+        id: generateUniqueId(),
+        title: 'Cash Deposit Request',
+        path: '/fund/cash-deposit-request',
+        icon: 'FUND',
+      },
     ],
   },
 

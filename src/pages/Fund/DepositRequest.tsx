@@ -37,6 +37,25 @@ const DepositRequest: React.FC = () => {
   const [rejectReason, setRejectReason] = useState(''); // Rejection reason input
 
   const companyCurrency = useCompanyCurrency();
+  const transactionDetailModel = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutsideModel = (e: MouseEvent) => {
+      if (
+        transactionDetailModel.current &&
+        !transactionDetailModel.current.contains(e.target as Node)
+      ) {
+        setSelectedTransaction(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutsideModel);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideModel);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
@@ -248,7 +267,7 @@ const DepositRequest: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="relative">
       <Breadcrumb pageName="Deposit Request" />
       <div className="table-bg">
         <div className="card-body overflow-x-auto">
@@ -321,6 +340,7 @@ const DepositRequest: React.FC = () => {
       </div>
 
       {/* Transaction Detail Modal */}
+
       {selectedTransaction && (
         <>
           <Dialog
@@ -332,20 +352,32 @@ const DepositRequest: React.FC = () => {
             }}
             className="relative z-50"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all">
-                <h3 className="text-xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+            <div
+              // ref={transactionDetailModel}
+              className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm top-10"
+            >
+              <div
+                className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
+                ref={transactionDetailModel}
+              >
+                <h3 className="text-2xl font-bold mb-6 border-b border-gray-200 dark:border-gray-700 pb-3 text-gray-900 dark:text-white tracking-tight">
                   Transaction Details
                 </h3>
 
-                <div className="space-y-4 text-gray-900 dark:text-gray-100">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Username:</span>
-                    <span>{selectedTransaction.uCode?.username || 'N/A'}</span>
+                <div className="space-y-5 text-gray-700 dark:text-gray-200">
+                  <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      Username
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-300 truncate">
+                      {selectedTransaction.uCode?.username || 'N/A'}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Amount:</span>
-                    <span>
+                  <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      Amount
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-300">
                       {selectedTransaction.amount !== undefined &&
                       selectedTransaction.amount !== null
                         ? `${companyCurrency}${selectedTransaction.amount.toFixed(
@@ -354,31 +386,41 @@ const DepositRequest: React.FC = () => {
                         : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Transaction Number:</span>
-                    <span>{selectedTransaction.txNumber || 'N/A'}</span>
+                  <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      Transaction Number
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-300 truncate">
+                      {selectedTransaction.txNumber || 'N/A'}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Status:</span>
+                  <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      Status
+                    </span>
                     <span
                       className={`${getStatusColor(
                         selectedTransaction.status,
-                      )} font-semibold`}
+                      )} font-semibold px-3 py-1 rounded-full text-sm`}
                     >
                       {getStatusText(selectedTransaction.status)}
                     </span>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium mb-2">Payment Slip:</span>
-                    {renderPaymentSlip(selectedTransaction.paymentSlip)}
+                  <div className="flex flex-col p-3">
+                    <span className="font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                      Payment Slip:
+                    </span>
+                    <div className="overflow-hidden rounded-lg w-full">
+                      {renderPaymentSlip(selectedTransaction.paymentSlip)}
+                    </div>
                   </div>
                 </div>
 
                 {selectedTransaction.status === 0 && showRejectReason && (
-                  <div className="mt-4">
+                  <div className="mt-6">
                     <label
                       htmlFor="rejectReason"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                     >
                       Reason for Rejection
                     </label>
@@ -386,19 +428,19 @@ const DepositRequest: React.FC = () => {
                       id="rejectReason"
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3"
-                      rows={3}
+                      className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-4 transition-all duration-200"
+                      rows={4}
                       placeholder="Enter reason for rejection"
                     />
                   </div>
                 )}
 
-                <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4 flex gap-3">
+                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4">
                   {selectedTransaction.status === 0 && (
                     <>
                       <button
                         onClick={handleApprove}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                        className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-all duration-200 transform hover:-translate-y-1 text-center"
                       >
                         Approve
                       </button>
@@ -408,7 +450,7 @@ const DepositRequest: React.FC = () => {
                             ? handleReject()
                             : setShowRejectReason(true)
                         }
-                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                        className="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 transition-all duration-200 transform hover:-translate-y-1 text-center"
                       >
                         {showRejectReason ? 'Submit Rejection' : 'Reject'}
                       </button>
@@ -420,7 +462,7 @@ const DepositRequest: React.FC = () => {
                       setShowRejectReason(false);
                       setRejectReason('');
                     }}
-                    className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                    className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 transition-all duration-200 transform hover:-translate-y-1 text-center"
                   >
                     Close
                   </button>
@@ -435,9 +477,10 @@ const DepositRequest: React.FC = () => {
               open={isImageOpen}
               onClose={() => setIsImageOpen(false)}
               className="relative z-50"
+              aria-labelledby="payment-slip-preview"
             >
-              <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
-                <div className="relative">
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm top-10">
+                <div className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105">
                   <img
                     src={
                       selectedTransaction.paymentSlip.startsWith('http')
@@ -445,11 +488,12 @@ const DepositRequest: React.FC = () => {
                         : `${API_URL}${selectedTransaction.paymentSlip}`
                     }
                     alt="Payment Slip Fullscreen"
-                    className="max-w-full max-h-[90vh] rounded-md"
+                    className="w-full h-auto max-w-full max-h-[90vh] rounded-md object-contain"
                   />
                   <button
                     onClick={() => setIsImageOpen(false)}
-                    className="absolute top-2 right-2 p-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 focus:outline-none"
+                    className="fixed w-10 h-10 top-2 right-2 p-2 bg-gray-900/80 dark:bg-gray-800/80 text-white rounded-full hover:bg-gray-700/90 focus:outline-none focus:ring-2 focus:ring-white z-50 backdrop-blur-sm text-center"
+                    aria-label="Close image preview"
                   >
                     ✕
                   </button>

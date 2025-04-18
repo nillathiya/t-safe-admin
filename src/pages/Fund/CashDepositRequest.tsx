@@ -20,9 +20,9 @@ import {
   IUpdateUserFundTransactionPayload,
 } from '../../types';
 import { API_URL } from '../../api/routes';
-import { useCompanyCurrency } from '../../hooks/useCompanyInfo';
+import { useCompanyCurrency, useCompanyInfo } from '../../hooks/useCompanyInfo';
 
-const DepositHistory: React.FC = () => {
+const CashDepositRequest: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { fundTransactions, isLoading } = useSelector(
     (state: RootState) => state.transaction,
@@ -35,7 +35,6 @@ const DepositHistory: React.FC = () => {
   const [isImageOpen, setIsImageOpen] = useState(false); // State for full-screen image preview
   const [showRejectReason, setShowRejectReason] = useState(false); // Toggle rejection reason input
   const [rejectReason, setRejectReason] = useState(''); // Rejection reason input
-
   const companyCurrency = useCompanyCurrency();
   const transactionDetailModelRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +44,6 @@ const DepositHistory: React.FC = () => {
         transactionDetailModelRef.current &&
         !transactionDetailModelRef.current.contains(e.target as Node)
       ) {
-        console.log('clicked outside');
         setSelectedTransaction(null);
       }
     };
@@ -62,8 +60,8 @@ const DepositHistory: React.FC = () => {
         setIsInitialLoading(true);
         const params = {
           txType: FUND_TX_TYPE.FUND_ADD,
-          status: '1,2',
-          depositAccountType: 'manual',
+          status: 0,
+          depositAccountType: 'cash',
         };
         await dispatch(getFundTransactionsAsync(params)).unwrap();
       } catch (error: any) {
@@ -268,7 +266,7 @@ const DepositHistory: React.FC = () => {
 
   return (
     <div>
-      <Breadcrumb pageName="Deposit History" />
+      <Breadcrumb pageName="Cash Deposit Request" />
       <div className="table-bg">
         <div className="card-body overflow-x-auto">
           <table ref={tableRef} className="table bordered-table display">
@@ -293,7 +291,7 @@ const DepositHistory: React.FC = () => {
                     colSpan={8}
                     className="text-center py-4 text-gray-600 dark:text-gray-300"
                   >
-                    No Deposit Request found
+                    Cash Deposit Request Not Found
                   </td>
                 </tr>
               ) : (
@@ -353,8 +351,8 @@ const DepositHistory: React.FC = () => {
           >
             <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm">
               <div
-                className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
                 ref={transactionDetailModelRef}
+                className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
               >
                 <h3 className="text-2xl font-bold mb-6 border-b border-gray-200 dark:border-gray-700 pb-3 text-gray-900 dark:text-white tracking-tight">
                   Transaction Details
@@ -382,14 +380,23 @@ const DepositHistory: React.FC = () => {
                         : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
-                      Transaction Number
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-300 truncate">
-                      {selectedTransaction.txNumber || 'N/A'}
-                    </span>
-                  </div>
+                  {selectedTransaction.response &&
+                    Object.entries(JSON.parse(selectedTransaction.response))
+                      .filter(([key]) => !['amount'].includes(key))
+                      .map(([key, value], index) => (
+                        <div
+                          className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                          key={index}
+                        >
+                          <span className="font-semibold capitalize text-gray-900 dark:text-gray-100">
+                            {key || 'N/A'}
+                          </span>
+                          <span className="text-gray-600 dark:text-gray-300 truncate">
+                            {String(value) || 'N/A'}
+                          </span>
+                        </div>
+                      ))}
+
                   <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <span className="font-semibold text-gray-900 dark:text-gray-100">
                       Status
@@ -431,7 +438,7 @@ const DepositHistory: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4">
+                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4 text-center">
                   {selectedTransaction.status === 0 && (
                     <>
                       <button
@@ -503,4 +510,4 @@ const DepositHistory: React.FC = () => {
   );
 };
 
-export default DepositHistory;
+export default CashDepositRequest;

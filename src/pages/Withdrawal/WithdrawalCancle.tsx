@@ -19,6 +19,7 @@ import toast from 'react-hot-toast';
 import { formatDate } from '../../utils/dateUtils';
 import { ICONS } from '../../constants';
 import Icon from '../../components/Icons/Icon';
+import { useCompanyCurrency } from '../../hooks/useCompanyInfo';
 
 const WithdrawalCancle: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -27,9 +28,8 @@ const WithdrawalCancle: React.FC = () => {
   const { withdrawals, isLoading } = useSelector(
     (state: RootState) => state.withdrawal,
   );
-  const { companyInfo } = useSelector((state: RootState) => state.settings);
-  const companyCurrency = companyInfo.find((data) => data.label === 'currency')
-    ?.value;
+  const companyCurrency = useCompanyCurrency();
+
   useEffect(() => {
     (async () => {
       try {
@@ -82,15 +82,15 @@ const WithdrawalCancle: React.FC = () => {
     <div>
       <Breadcrumb pageName="Pending Withdrwals" />
       <div className="table-bg">
-        <div className="card-body overflow-x-auto">
-          {/* Refresh button */}
-          <div className="flex justify-end mb-2">
-            <div className="w-15">
-              <button onClick={handleRefresh} className="btn-refresh">
-                <Icon Icon={ICONS.REFRESH} className="w-7 h-7" />
-              </button>
-            </div>
+        {/* Refresh button */}
+        <div className="flex justify-end mb-2">
+          <div className="w-15">
+            <button onClick={handleRefresh} className="btn-refresh">
+              <Icon Icon={ICONS.REFRESH} className="w-7 h-7" />
+            </button>
           </div>
+        </div>
+        <div className="card-body overflow-x-auto">
           <table ref={tableRef} className="table bordered-table display">
             <thead>
               <tr>
@@ -121,13 +121,13 @@ const WithdrawalCancle: React.FC = () => {
                         ))}
                     </tr>
                   ))
-              ) : withdrawals.length === 0 ? (
+              ) : cancelledWithdrawals.length === 0 ? (
                 <tr>
                   <td
                     colSpan={13}
                     className="text-center py-4 text-gray-600 dark:text-gray-300"
                   >
-                    No orders found
+                    No Cancelled Withdrawal Found
                   </td>
                 </tr>
               ) : (

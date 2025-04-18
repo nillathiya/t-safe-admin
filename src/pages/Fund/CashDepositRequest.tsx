@@ -28,7 +28,6 @@ const CashDepositRequest: React.FC = () => {
     (state: RootState) => state.transaction,
   );
   const tableRef = useRef<HTMLTableElement>(null);
-  const { companyInfo } = useSelector((state: RootState) => state.settings);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] =
     useState<IFundTransaction | null>(null);

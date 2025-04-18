@@ -19,6 +19,7 @@ interface Option {
   key: string;
   label: string;
   status: boolean;
+  children?: Option[];
 }
 
 interface SettingItem {
@@ -37,25 +38,18 @@ interface SettingItem {
     | 'boolean'
     | 'single-element-array'
     | 'number';
-  options?: string[] | string | Option[] | boolean;
+  options?: string[] | Option[] | boolean;
 }
 
 function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
-  // Handle undefined or non-array cases
   if (!options || !Array.isArray(options)) {
     return 'unknown';
   }
-
-  // If array is empty, type cannot be determined reliably
   if (options.length === 0) {
     return 'unknown';
   }
-
-  // Check the type of the first element
   const firstElement = options[0];
-
   if (typeof firstElement === 'string') {
-    // Verify all elements are strings
     const allStrings = options.every((item: any) => typeof item === 'string');
     return allStrings ? 'string[]' : 'unknown';
   } else if (
@@ -63,15 +57,14 @@ function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
     firstElement !== null &&
     'key' in firstElement
   ) {
-    // Verify all elements are objects with a 'key' property
     const allOptions = options.every(
       (item: any) => typeof item === 'object' && item !== null && 'key' in item,
     );
     return allOptions ? 'Option[]' : 'unknown';
   }
-
   return 'unknown';
 }
+
 const EditSetting: React.FC = () => {
   const { category, title } = useParams<{ category: string; title: string }>();
   const navigate = useNavigate();
@@ -82,7 +75,7 @@ const EditSetting: React.FC = () => {
   const [settings, setSettings] = useState<SettingItem[]>([]);
   const [editableSettings, setEditableSettings] = useState<SettingItem[]>([]);
   const [formData, setFormData] = useState<
-    Record<string, string | string[] | Option[] | File | boolean>
+    Record<string, string | string[] | File | boolean>
   >({});
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -99,15 +92,15 @@ const EditSetting: React.FC = () => {
           break;
         case 'user-settings': {
           const result = await dispatch(getUserSettingsAsync()).unwrap();
-          setSettings(result.data); // Use API response directly
+          setSettings(result.data);
           break;
         }
         case 'admin-settings': {
           if (adminSettings.length === 0) {
             const result = await dispatch(getAdminSettingsAsync()).unwrap();
-            setSettings(result.data); // Use API response directly
+            setSettings(result.data);
           } else {
-            setSettings(adminSettings); // Use existing adminSettings
+            setSettings(adminSettings);
           }
           break;
         }
@@ -122,15 +115,13 @@ const EditSetting: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [category, dispatch, adminSettings, navigate]); // Removed userSettings
+  }, [category, dispatch, adminSettings, navigate]);
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
 
   useEffect(() => {
-    console.log('settings', settings);
-    // Only process settings if they exist and title is provided
     if (settings.length > 0 && title) {
       const matchedSettings = settings.filter(
         (setting) => setting.title.trim() === title.trim(),
@@ -144,27 +135,32 @@ const EditSetting: React.FC = () => {
 
       setEditableSettings(matchedSettings);
 
-      const newFormData: Record<
-        string,
-        string | string[] | Option[] | File | boolean
-      > = {};
+      const newFormData: Record<string, string | string[] | File | boolean> =
+        {};
       const newFilePreviews: Record<string, string> = {};
 
       matchedSettings.forEach((setting) => {
-        if (setting.type === 'array' && Array.isArray(setting.value)) {
-          newFormData[setting._id] = (setting.value as Option[]).map(
-            (opt) => opt.key,
-          );
+        if (setting.type === 'array') {
+          newFormData[setting._id] = Array.isArray(setting.value)
+            ? (setting.value as Option[]).map((opt) => opt.key)
+            : [];
+        } else if (setting.type === 'single-element-array') {
+          newFormData[setting._id] =
+            Array.isArray(setting.value) && setting.value.length > 0
+              ? (setting.value as Option[])[0].key
+              : '';
+        } else if (setting.type === 'boolean') {
+          newFormData[setting._id] = !!setting.value;
+        } else if (setting.type === 'image') {
+          newFormData[setting._id] = setting.value as string;
         } else {
-          newFormData[setting._id] = setting.value;
+          newFormData[setting._id] = String(setting.value);
         }
 
-        if (setting.type === 'image' && setting.value) {
-          newFilePreviews[setting._id] = (setting.value as string).startsWith(
-            '/uploads',
-          )
+        if (setting.type === 'image' && typeof setting.value === 'string') {
+          newFilePreviews[setting._id] = setting.value.startsWith('/uploads')
             ? `${API_URL}${setting.value}`
-            : (setting.value as string);
+            : setting.value;
         }
       });
 
@@ -172,6 +168,7 @@ const EditSetting: React.FC = () => {
       setFilePreviews(newFilePreviews);
     }
   }, [settings, title]);
+
   const handleInputChange = useCallback(
     (id: string, value: string | string[] | File, setting: SettingItem) => {
       setFormData((prev) => {
@@ -181,12 +178,6 @@ const EditSetting: React.FC = () => {
           case 'number':
             newValue = parseFloat(value as string);
             break;
-          // case 'file':
-          //   newValue = value as File;
-          //   break;
-          // case 'multi-select':
-          //   newValue = value as string[];
-          //   break;
           default:
             newValue = value;
         }
@@ -198,25 +189,15 @@ const EditSetting: React.FC = () => {
   );
 
   const handleSelectChange = useCallback(
-    (id: string, selectedOptions: any, setting: any) => {
-      // const selectedValues = selectedOptions
-      //   ? selectedOptions.map((option: { value: string }) => option.value)
-      //   : [];
-
+    (id: string, selectedOptions: string[], setting: SettingItem) => {
       let selectedValues: string[] | string;
 
       if (setting.type === 'array') {
-        // Multi-select: store array of values
-        selectedValues = selectedOptions
-          ? selectedOptions.map((option: { value: string }) => option.value)
-          : [];
+        selectedValues = selectedOptions;
       } else if (setting.type === 'single-element-array') {
-        // Single-select: store single value or undefined
-        selectedValues =
-          selectedOptions && !Array.isArray(selectedOptions)
-            ? selectedOptions.value
-            : '';
+        selectedValues = selectedOptions.length > 0 ? selectedOptions[0] : '';
       }
+
       setFormData((prev) => ({ ...prev, [id]: selectedValues }));
     },
     [],
@@ -252,51 +233,109 @@ const EditSetting: React.FC = () => {
       if (!category) return;
 
       setIsUpdating((prev) => ({ ...prev, [setting._id]: true }));
-      let value;
-      value = formData[setting._id];
-      console.log('setting', setting);
-      console.log('selected value', value);
+      let value: string | string[] | boolean | Option[] | File =
+        formData[setting._id];
 
-      // handle value if value is in array ["fund_wallet"];
-      if (
-        Array.isArray(value) &&
-        value.every((v) => typeof v === 'string') &&
-        Array.isArray(setting.value)
-      ) {
+      // Handle array type (multi-select)
+      if (setting.type === 'array' && Array.isArray(value)) {
         const selectedKeys = value as string[];
-        value = (setting.options as Option[]).filter((item) =>
-          selectedKeys.includes(item.key),
-        );
-      }
+        const selectedOptions: Option[] = [];
 
-      // handle value if value is in single "fund_wallet"
-      if (!Array.isArray(value) && typeof value === 'string') {
-        const selectedKeys = value;
-
-        // Check if setting.options is defined and an array
-        if (setting.options && Array.isArray(setting.options)) {
+        if (Array.isArray(setting.options)) {
           const optionsType = checkOptionsType(setting.options);
-
           if (optionsType === 'Option[]') {
-            // Handle Option[] array
-            value = (setting.options as Option[]).filter((item: Option) =>
-              selectedKeys.includes(item.key),
+            // Search top-level options
+            selectedOptions.push(
+              ...(setting.options as Option[])
+                .filter((opt) => selectedKeys.includes(opt.key))
+                .map((opt) => ({
+                  key: opt.key,
+                  label: opt.label,
+                  status: opt.status,
+                })),
             );
+
+            // Search children
+            for (const opt of setting.options as Option[]) {
+              if ('children' in opt && Array.isArray(opt.children)) {
+                selectedOptions.push(
+                  ...opt.children
+                    .filter((child) => selectedKeys.includes(child.key))
+                    .map((child) => ({
+                      key: child.key,
+                      label: child.label,
+                      status: child.status,
+                    })),
+                );
+              }
+            }
           } else if (optionsType === 'string[]') {
-            // Handle string[] array
-            value = (setting.options as string[]).filter((item: string) =>
-              selectedKeys.includes(item),
+            // Handle string[] options
+            selectedOptions.push(
+              ...(setting.options as string[])
+                .filter((key) => selectedKeys.includes(key))
+                .map((key) => ({
+                  key,
+                  label: key,
+                  status: false, // Default status for string options
+                })),
             );
           }
-          // If 'unknown', you can decide to skip or handle differently
         }
+
+        value = selectedOptions;
       }
-      console.log('value', value);
+
+      // Handle single-element-array type (single-select)
+      if (
+        setting.type === 'single-element-array' &&
+        typeof value === 'string' &&
+        value
+      ) {
+        let selectedOption: Option | null = null;
+
+        if (Array.isArray(setting.options)) {
+          const optionsType = checkOptionsType(setting.options);
+          if (optionsType === 'Option[]') {
+            selectedOption =
+              (setting.options as Option[]).find((opt) => opt.key === value) ||
+              null;
+
+            if (!selectedOption) {
+              for (const opt of setting.options as Option[]) {
+                if ('children' in opt && Array.isArray(opt.children)) {
+                  selectedOption =
+                    opt.children.find((child) => child.key === value) || null;
+                  if (selectedOption) break;
+                }
+              }
+            }
+          } else if (optionsType === 'string[]') {
+            if ((setting.options as string[]).includes(value)) {
+              selectedOption = {
+                key: value,
+                label: value,
+                status: false, // Default status for string options
+              };
+            }
+          }
+        }
+
+        value = selectedOption
+          ? [
+              {
+                key: selectedOption.key,
+                label: selectedOption.label,
+                status: selectedOption.status,
+              },
+            ]
+          : [];
+      }
+
       try {
         let result;
 
         if (setting.type === 'image') {
-          // Handle FormData only for image
           const formDataToSend = new FormData();
           formDataToSend.append('file', value as File);
 
@@ -324,7 +363,7 @@ const EditSetting: React.FC = () => {
           const payload = {
             id: setting._id,
             formData: {
-              value: typeof value === 'string' ? value : value,
+              value,
             },
           };
 
@@ -345,7 +384,14 @@ const EditSetting: React.FC = () => {
         if (result?.status === 'success' && result?.data) {
           setFormData((prev) => ({
             ...prev,
-            [setting._id]: result.data.value,
+            [setting._id]:
+              setting.type === 'array'
+                ? (result.data.value as Option[]).map((opt) => opt.key)
+                : setting.type === 'single-element-array' &&
+                  Array.isArray(result.data.value) &&
+                  result.data.value.length > 0
+                ? (result.data.value as Option[])[0].key
+                : result.data.value,
           }));
 
           if (setting.type === 'image') {
@@ -380,8 +426,6 @@ const EditSetting: React.FC = () => {
     return <div className="p-6">Invalid category or title</div>;
   }
 
-  // console.log('formData', formData);
-  console.log('editableSettings', editableSettings);
   return (
     <>
       <Breadcrumb pageName={`Edit ${title} (${category})`} />
@@ -462,7 +506,6 @@ const EditSetting: React.FC = () => {
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
                       )}
-
                       {setting.type === 'boolean' && (
                         <div>
                           <label className="flex cursor-pointer items-center">
@@ -471,9 +514,7 @@ const EditSetting: React.FC = () => {
                                 type="checkbox"
                                 name="editProfileWithOTP"
                                 checked={formData[setting._id] === true}
-                                onChange={(e) =>
-                                  handleToggleChange(setting._id)
-                                }
+                                onChange={() => handleToggleChange(setting._id)}
                                 className="sr-only"
                               />
                               {false ? (
@@ -513,20 +554,42 @@ const EditSetting: React.FC = () => {
                             options={
                               Array.isArray(setting.options)
                                 ? setting.options.map((opt) => {
-                                    if (
-                                      typeof opt === 'object' &&
-                                      'key' in opt &&
-                                      'label' in opt
-                                    ) {
+                                    const optionsType = checkOptionsType(
+                                      setting.options,
+                                    );
+                                    if (optionsType === 'string[]') {
                                       return {
-                                        value: opt.key,
-                                        label: opt.label,
+                                        value: opt as string,
+                                        label: opt as string,
+                                        status: false,
                                       };
                                     }
-                                    return {
-                                      value: String(opt),
-                                      label: String(opt),
+
+                                    const baseOption = {
+                                      value: (opt as Option).key,
+                                      label: (opt as Option).label,
+                                      status: (opt as Option).status ?? false,
                                     };
+
+                                    if (
+                                      typeof opt === 'object' &&
+                                      'children' in opt &&
+                                      Array.isArray(opt.children)
+                                    ) {
+                                      return {
+                                        label: baseOption.label,
+                                        options: [
+                                          baseOption,
+                                          ...opt.children.map((child) => ({
+                                            value: child.key,
+                                            label: child.label,
+                                            status: child.status ?? false,
+                                          })),
+                                        ],
+                                      };
+                                    }
+
+                                    return baseOption;
                                   })
                                 : []
                             }
@@ -534,25 +597,54 @@ const EditSetting: React.FC = () => {
                               Array.isArray(formData[setting._id])
                                 ? (formData[setting._id] as string[])
                                     .map((key) => {
-                                      const opt = Array.isArray(setting.options)
-                                        ? setting.options.find(
-                                            (o) =>
-                                              (typeof o === 'object' &&
-                                                o.key === key) ||
-                                              o === key,
-                                          )
-                                        : null;
-                                      return opt
-                                        ? {
-                                            value:
-                                              typeof opt === 'object'
-                                                ? opt.key
-                                                : opt,
-                                            label:
-                                              typeof opt === 'object'
-                                                ? opt.label
-                                                : opt,
+                                      let selectedOpt: Option | string | null =
+                                        null;
+
+                                      if (Array.isArray(setting.options)) {
+                                        const optionsType = checkOptionsType(
+                                          setting.options,
+                                        );
+                                        if (optionsType === 'string[]') {
+                                          selectedOpt =
+                                            (setting.options as string[]).find(
+                                              (o) => o === key,
+                                            ) || null;
+                                        } else if (optionsType === 'Option[]') {
+                                          selectedOpt =
+                                            (setting.options as Option[]).find(
+                                              (o) => o.key === key,
+                                            ) || null;
+
+                                          if (!selectedOpt) {
+                                            for (const opt of setting.options as Option[]) {
+                                              if (
+                                                'children' in opt &&
+                                                Array.isArray(opt.children)
+                                              ) {
+                                                selectedOpt =
+                                                  opt.children.find(
+                                                    (c) => c.key === key,
+                                                  ) || null;
+                                                if (selectedOpt) break;
+                                              }
+                                            }
                                           }
+                                        }
+                                      }
+
+                                      return selectedOpt
+                                        ? typeof selectedOpt === 'string'
+                                          ? {
+                                              value: selectedOpt,
+                                              label: selectedOpt,
+                                              status: false,
+                                            }
+                                          : {
+                                              value: selectedOpt.key,
+                                              label: selectedOpt.label,
+                                              status:
+                                                selectedOpt.status ?? false,
+                                            }
                                         : null;
                                     })
                                     .filter(
@@ -561,88 +653,102 @@ const EditSetting: React.FC = () => {
                                       ): item is {
                                         value: string;
                                         label: string;
+                                        status: boolean;
                                       } => Boolean(item),
                                     )
                                 : []
                             }
                             onChange={(selected) =>
-                              handleSelectChange(setting._id, selected, setting)
+                              handleSelectChange(
+                                setting._id,
+                                selected
+                                  ? selected.map((item) => item.value)
+                                  : [],
+                                setting,
+                              )
                             }
                             placeholder="Select options..."
                             className="w-full"
                             classNamePrefix="react-select"
+                            menuPortalTarget={document.body}
                             styles={{
                               control: (base) => ({
                                 ...base,
                                 backgroundColor: 'transparent',
-                                borderColor: '#e5e7eb', // Light mode: gray-200
-                                borderRadius: '0.375rem', // Matches rounded-md
-                                padding: '0.5rem 1rem', // Matches py-2 px-4
+                                borderColor: '#e5e7eb',
+                                borderRadius: '0.375rem',
+                                padding: '0.5rem 1rem',
                                 boxShadow: 'none',
                                 '&:hover': {
-                                  borderColor: '#3b82f6', // Matches focus:border-primary (blue-500)
+                                  borderColor: '#3b82f6',
                                 },
                                 '&:focus-within': {
-                                  borderColor: '#3b82f6', // Matches focus:border-primary
+                                  borderColor: '#3b82f6',
                                 },
+                                zIndex: 999,
                               }),
                               menu: (base) => ({
                                 ...base,
-                                backgroundColor: '#ffffff', // Light mode: white
+                                backgroundColor: '#ffffff',
                                 borderRadius: '0.375rem',
                                 marginTop: '0.25rem',
+                                zIndex: 9999,
+                              }),
+                              menuPortal: (base) => ({
+                                ...base,
+                                zIndex: 9999,
                               }),
                               option: (base, { isFocused, isSelected }) => ({
                                 ...base,
                                 backgroundColor: isSelected
-                                  ? '#3b82f6' // blue-500
+                                  ? '#3b82f6'
                                   : isFocused
-                                  ? '#eff6ff' // blue-50
-                                  : '#ffffff', // white
-                                color: isSelected ? '#ffffff' : '#1f2937', // gray-800
+                                  ? '#eff6ff'
+                                  : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#1f2937',
                                 '&:active': {
-                                  backgroundColor: '#2563eb', // blue-600
+                                  backgroundColor: '#2563eb',
                                 },
                               }),
                               multiValue: (base) => ({
                                 ...base,
-                                backgroundColor: '#eff6ff', // blue-50
+                                backgroundColor: '#eff6ff',
                                 borderRadius: '0.25rem',
                               }),
                               multiValueLabel: (base) => ({
                                 ...base,
-                                color: '#1f2937', // gray-800
+                                color: '#1f2937',
                               }),
                               multiValueRemove: (base) => ({
                                 ...base,
-                                color: '#1f2937', // gray-800
+                                color: '#1f2937',
                                 '&:hover': {
-                                  backgroundColor: '#dbeafe', // blue-100
-                                  color: '#2563eb', // blue-600
+                                  backgroundColor: '#dbeafe',
+                                  color: '#2563eb',
                                 },
                               }),
                               placeholder: (base) => ({
                                 ...base,
-                                color: '#9ca3af', // gray-400
+                                color: '#9ca3af',
                               }),
                               singleValue: (base) => ({
                                 ...base,
-                                color: '#1f2937', // gray-800
+                                color: '#1f2937',
                               }),
                               input: (base) => ({
                                 ...base,
-                                color: '#1f2937', // gray-800
+                                color: '#1f2937',
                               }),
                             }}
                             theme={(theme) => ({
                               ...theme,
                               colors: {
                                 ...theme.colors,
-                                primary: '#3b82f6', // blue-500
-                                primary25: '#eff6ff', // blue-50
-                                primary50: '#dbeafe', // blue-100
-                                neutral0: '#ffffff', // white
-                                neutral80: '#1f2937', // gray-800
+                                primary: '#3b82f6',
+                                primary25: '#eff6ff',
+                                primary50: '#dbeafe',
+                                neutral0: '#ffffff',
+                                neutral80: '#1f2937',
                               },
                             })}
                           />
@@ -652,18 +758,45 @@ const EditSetting: React.FC = () => {
                             (formData[setting._id] as string[]).length > 0
                               ? (formData[setting._id] as string[])
                                   .map((key) => {
-                                    const opt = Array.isArray(setting.options)
-                                      ? setting.options.find(
-                                          (o) =>
-                                            (typeof o === 'object' &&
-                                              o.key === key) ||
-                                            o === key,
-                                        )
-                                      : null;
-                                    return opt
-                                      ? typeof opt === 'object'
-                                        ? opt.label
-                                        : opt
+                                    let selectedOpt: Option | string | null =
+                                      null;
+
+                                    if (Array.isArray(setting.options)) {
+                                      const optionsType = checkOptionsType(
+                                        setting.options,
+                                      );
+                                      if (optionsType === 'string[]') {
+                                        selectedOpt =
+                                          (setting.options as string[]).find(
+                                            (o) => o === key,
+                                          ) || null;
+                                      } else if (optionsType === 'Option[]') {
+                                        selectedOpt =
+                                          (setting.options as Option[]).find(
+                                            (o) => o.key === key,
+                                          ) || null;
+
+                                        if (!selectedOpt) {
+                                          for (const opt of setting.options as Option[]) {
+                                            if (
+                                              'children' in opt &&
+                                              Array.isArray(opt.children)
+                                            ) {
+                                              selectedOpt =
+                                                opt.children.find(
+                                                  (c) => c.key === key,
+                                                ) || null;
+                                              if (selectedOpt) break;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+
+                                    return selectedOpt
+                                      ? typeof selectedOpt === 'string'
+                                        ? selectedOpt
+                                        : selectedOpt.label
                                       : null;
                                   })
                                   .filter(Boolean)
@@ -679,94 +812,56 @@ const EditSetting: React.FC = () => {
                             options={
                               Array.isArray(setting.options)
                                 ? setting.options.map((opt) => {
-                                    if (
-                                      typeof opt === 'object' &&
-                                      'key' in opt &&
-                                      'label' in opt
-                                    ) {
+                                    const optionsType = checkOptionsType(
+                                      setting.options,
+                                    );
+                                    if (optionsType === 'string[]') {
                                       return {
-                                        value: opt.key,
-                                        label: opt.label,
+                                        value: opt as string,
+                                        label: opt as string,
                                       };
                                     }
                                     return {
-                                      value: String(opt),
-                                      label: String(opt),
+                                      value: (opt as Option).key,
+                                      label: (opt as Option).label,
                                     };
                                   })
                                 : []
                             }
                             value={(() => {
                               const rawValue = formData[setting._id];
-
-                              if (typeof rawValue === 'string') {
-                                // Handle case where value is a single string key
-                                const opt = Array.isArray(setting.options)
-                                  ? setting.options.find(
-                                      (o) =>
-                                        (typeof o === 'object' &&
-                                          o.key === rawValue) ||
-                                        o === rawValue,
-                                    )
-                                  : null;
-
-                                const result = opt
-                                  ? {
-                                      value:
-                                        typeof opt === 'object' ? opt.key : opt,
-                                      label:
-                                        typeof opt === 'object'
-                                          ? opt.label
-                                          : opt,
-                                    }
-                                  : null;
-
-                                console.log(
-                                  `Single-select: id=${setting._id}, key=${rawValue}, value=`,
-                                  result,
-                                );
-                                return result;
+                              if (typeof rawValue === 'string' && rawValue) {
+                                if (Array.isArray(setting.options)) {
+                                  const optionsType = checkOptionsType(
+                                    setting.options,
+                                  );
+                                  if (optionsType === 'string[]') {
+                                    const opt =
+                                      (setting.options as string[]).find(
+                                        (o) => o === rawValue,
+                                      ) || null;
+                                    return opt
+                                      ? { value: opt, label: opt }
+                                      : null;
+                                  } else if (optionsType === 'Option[]') {
+                                    const opt =
+                                      (setting.options as Option[]).find(
+                                        (o) => o.key === rawValue,
+                                      ) || null;
+                                    return opt
+                                      ? { value: opt.key, label: opt.label }
+                                      : null;
+                                  }
+                                }
                               }
-
-                              if (
-                                Array.isArray(rawValue) &&
-                                rawValue.length > 0 &&
-                                typeof rawValue[0] === 'object'
-                              ) {
-                                // Handle array of objects (e.g., [{ key: 'something' }])
-                                const selectedKey = rawValue[0].key;
-
-                                const opt = Array.isArray(setting.options)
-                                  ? setting.options.find(
-                                      (o) =>
-                                        (typeof o === 'object' &&
-                                          o.key === selectedKey) ||
-                                        o === selectedKey,
-                                    )
-                                  : null;
-
-                                const result = opt
-                                  ? {
-                                      value:
-                                        typeof opt === 'object' ? opt.key : opt,
-                                      label:
-                                        typeof opt === 'object'
-                                          ? opt.label
-                                          : opt,
-                                    }
-                                  : null;
-
-                                console.log(
-                                  `Array-based value: id=${setting._id}, key=${selectedKey}, value=`,
-                                  result,
-                                );
-                                return result;
-                              }
-
                               return null;
                             })()}
                             onChange={(selected) =>
-                              handleSelectChange(setting._id, selected, setting)
+                              handleSelectChange(
+                                setting._id,
+                                selected ? [selected.value] : [],
+                                setting,
+                              )
                             }
                             placeholder="Select an option..."
                             className="w-full"
@@ -776,21 +871,21 @@ const EditSetting: React.FC = () => {
                               control: (base) => ({
                                 ...base,
                                 backgroundColor: 'transparent',
-                                borderColor: '#e5e7eb', // Light mode: gray-200
-                                borderRadius: '0.375rem', // Matches rounded-md
-                                padding: '0.5rem 1rem', // Matches py-2 px-4
+                                borderColor: '#e5e7eb',
+                                borderRadius: '0.375rem',
+                                padding: '0.5rem 1rem',
                                 boxShadow: 'none',
                                 '&:hover': {
-                                  borderColor: '#3b82f6', // Matches focus:border-primary (blue-500)
+                                  borderColor: '#3b82f6',
                                 },
                                 '&:focus-within': {
-                                  borderColor: '#3b82f6', // Matches focus:border-primary
+                                  borderColor: '#3b82f6',
                                 },
                                 zIndex: 999,
                               }),
                               menu: (base) => ({
                                 ...base,
-                                backgroundColor: '#ffffff', // Light mode: white
+                                backgroundColor: '#ffffff',
                                 borderRadius: '0.375rem',
                                 marginTop: '0.25rem',
                                 zIndex: 9999,
@@ -802,32 +897,32 @@ const EditSetting: React.FC = () => {
                               option: (base, { isFocused, isSelected }) => ({
                                 ...base,
                                 backgroundColor: isSelected
-                                  ? '#3b82f6' // blue-500
+                                  ? '#3b82f6'
                                   : isFocused
-                                  ? '#eff6ff' // blue-50
-                                  : '#ffffff', // white
-                                color: isSelected ? '#ffffff' : '#1f2937', // gray-800
+                                  ? '#eff6ff'
+                                  : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#1f2937',
                                 '&:active': {
-                                  backgroundColor: '#2563eb', // blue-600
+                                  backgroundColor: '#2563eb',
                                 },
                               }),
                               placeholder: (base) => ({
                                 ...base,
-                                color: '#9ca3af', // gray-400
+                                color: '#9ca3af',
                               }),
                               singleValue: (base) => ({
                                 ...base,
-                                color: '#1f2937', // gray-800
+                                color: '#1f2937',
                               }),
                               input: (base) => ({
                                 ...base,
-                                color: '#1f2937', // gray-800
+                                color: '#1f2937',
                               }),
                               clearIndicator: (base) => ({
                                 ...base,
-                                color: '#9ca3af', // gray-400
+                                color: '#9ca3af',
                                 '&:hover': {
-                                  color: '#2563eb', // blue-600
+                                  color: '#2563eb',
                                 },
                               }),
                             }}
@@ -835,11 +930,11 @@ const EditSetting: React.FC = () => {
                               ...theme,
                               colors: {
                                 ...theme.colors,
-                                primary: '#3b82f6', // blue-500
-                                primary25: '#eff6ff', // blue-50
-                                primary50: '#dbeafe', // blue-100
-                                neutral0: '#ffffff', // white
-                                neutral80: '#1f2937', // gray-800
+                                primary: '#3b82f6',
+                                primary25: '#eff6ff',
+                                primary50: '#dbeafe',
+                                neutral0: '#ffffff',
+                                neutral80: '#1f2937',
                               },
                             })}
                           />
@@ -847,20 +942,26 @@ const EditSetting: React.FC = () => {
                             Selected Value:{' '}
                             {formData[setting._id]
                               ? (() => {
-                                  const key = formData[setting._id];
-                                  const opt = Array.isArray(setting.options)
-                                    ? setting.options.find(
-                                        (o) =>
-                                          (typeof o === 'object' &&
-                                            o.key === key) ||
-                                          o === key,
-                                      )
-                                    : null;
-                                  return opt
-                                    ? typeof opt === 'object'
-                                      ? opt.label
-                                      : opt
-                                    : 'None';
+                                  const key = formData[setting._id] as string;
+                                  if (Array.isArray(setting.options)) {
+                                    const optionsType = checkOptionsType(
+                                      setting.options,
+                                    );
+                                    if (optionsType === 'string[]') {
+                                      const opt =
+                                        (setting.options as string[]).find(
+                                          (o) => o === key,
+                                        ) || null;
+                                      return opt || 'None';
+                                    } else if (optionsType === 'Option[]') {
+                                      const opt =
+                                        (setting.options as Option[]).find(
+                                          (o) => o.key === key,
+                                        ) || null;
+                                      return opt ? opt.label : 'None';
+                                    }
+                                  }
+                                  return 'None';
                                 })()
                               : 'None'}
                           </p>

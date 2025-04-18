@@ -65,6 +65,88 @@ function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
   return 'unknown';
 }
 
+// New: Recursive function to flatten options for react-select
+const flattenOptions = (
+  options: Option[],
+  parentLabels: string[] = [],
+): { value: string; label: string; status: boolean; path: string }[] => {
+  let result: {
+    value: string;
+    label: string;
+    status: boolean;
+    path: string;
+  }[] = [];
+  options.forEach((opt) => {
+    const currentPath = [...parentLabels, opt.label].join(' > ');
+    result.push({
+      value: opt.key,
+      label: currentPath,
+      status: opt.status,
+      path: currentPath,
+    });
+    if (opt.children && Array.isArray(opt.children)) {
+      result = [
+        ...result,
+        ...flattenOptions(opt.children, [...parentLabels, opt.label]),
+      ];
+    }
+  });
+  return result;
+};
+
+// New: Recursive function to find an option by key
+const findOptionByKey = (options: Option[], key: string): Option | null => {
+  for (const opt of options) {
+    if (opt.key === key) {
+      return opt;
+    }
+    if (opt.children && Array.isArray(opt.children)) {
+      const found = findOptionByKey(opt.children, key);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// New: Recursive function to reconstruct hierarchical options
+const buildHierarchicalOptions = (
+  selectedKeys: string[],
+  allOptions: Option[],
+): Option[] => {
+  const result: Option[] = [];
+
+  const processOption = (opt: Option, parentKeys: string[]): Option | null => {
+    const isSelected = selectedKeys.includes(opt.key);
+    let children: Option[] = [];
+
+    if (opt.children && Array.isArray(opt.children)) {
+      children = opt.children
+        .map((child) => processOption(child, [...parentKeys, opt.key]))
+        .filter((child): child is Option => child !== null);
+    }
+
+    if (isSelected || children.length > 0) {
+      return {
+        key: opt.key,
+        label: opt.label,
+        status: opt.status,
+        ...(children.length > 0 && { children }),
+      };
+    }
+
+    return null;
+  };
+
+  allOptions.forEach((opt) => {
+    const processed = processOption(opt, []);
+    if (processed) {
+      result.push(processed);
+    }
+  });
+
+  return result;
+};
+
 const EditSetting: React.FC = () => {
   const { category, title } = useParams<{ category: string; title: string }>();
   const navigate = useNavigate();
@@ -191,14 +273,18 @@ const EditSetting: React.FC = () => {
   const handleSelectChange = useCallback(
     (id: string, selectedOptions: string[], setting: SettingItem) => {
       let selectedValues: string[] | string;
+      console.log('selectedOptions', selectedOptions);
 
       if (setting.type === 'array') {
         selectedValues = selectedOptions;
       } else if (setting.type === 'single-element-array') {
         selectedValues = selectedOptions.length > 0 ? selectedOptions[0] : '';
+      } else {
+        selectedValues = selectedOptions;
       }
 
       setFormData((prev) => ({ ...prev, [id]: selectedValues }));
+      console.log('formData', formData);
     },
     [],
   );
@@ -239,51 +325,24 @@ const EditSetting: React.FC = () => {
       // Handle array type (multi-select)
       if (setting.type === 'array' && Array.isArray(value)) {
         const selectedKeys = value as string[];
-        const selectedOptions: Option[] = [];
-
         if (Array.isArray(setting.options)) {
           const optionsType = checkOptionsType(setting.options);
           if (optionsType === 'Option[]') {
-            // Search top-level options
-            selectedOptions.push(
-              ...(setting.options as Option[])
-                .filter((opt) => selectedKeys.includes(opt.key))
-                .map((opt) => ({
-                  key: opt.key,
-                  label: opt.label,
-                  status: opt.status,
-                })),
+            // Rebuild hierarchical options
+            value = buildHierarchicalOptions(
+              selectedKeys,
+              setting.options as Option[],
             );
-
-            // Search children
-            for (const opt of setting.options as Option[]) {
-              if ('children' in opt && Array.isArray(opt.children)) {
-                selectedOptions.push(
-                  ...opt.children
-                    .filter((child) => selectedKeys.includes(child.key))
-                    .map((child) => ({
-                      key: child.key,
-                      label: child.label,
-                      status: child.status,
-                    })),
-                );
-              }
-            }
           } else if (optionsType === 'string[]') {
-            // Handle string[] options
-            selectedOptions.push(
-              ...(setting.options as string[])
-                .filter((key) => selectedKeys.includes(key))
-                .map((key) => ({
-                  key,
-                  label: key,
-                  status: false, // Default status for string options
-                })),
-            );
+            value = (setting.options as string[])
+              .filter((key) => selectedKeys.includes(key))
+              .map((key) => ({
+                key,
+                label: key,
+                status: false,
+              }));
           }
         }
-
-        value = selectedOptions;
       }
 
       // Handle single-element-array type (single-select)
@@ -297,25 +356,16 @@ const EditSetting: React.FC = () => {
         if (Array.isArray(setting.options)) {
           const optionsType = checkOptionsType(setting.options);
           if (optionsType === 'Option[]') {
-            selectedOption =
-              (setting.options as Option[]).find((opt) => opt.key === value) ||
-              null;
-
-            if (!selectedOption) {
-              for (const opt of setting.options as Option[]) {
-                if ('children' in opt && Array.isArray(opt.children)) {
-                  selectedOption =
-                    opt.children.find((child) => child.key === value) || null;
-                  if (selectedOption) break;
-                }
-              }
-            }
+            selectedOption = findOptionByKey(
+              setting.options as Option[],
+              value,
+            );
           } else if (optionsType === 'string[]') {
             if ((setting.options as string[]).includes(value)) {
               selectedOption = {
                 key: value,
                 label: value,
-                status: false, // Default status for string options
+                status: false,
               };
             }
           }
@@ -552,100 +602,57 @@ const EditSetting: React.FC = () => {
                           <Select
                             isMulti
                             options={
-                              Array.isArray(setting.options)
-                                ? setting.options.map((opt) => {
-                                    const optionsType = checkOptionsType(
-                                      setting.options,
-                                    );
-                                    if (optionsType === 'string[]') {
-                                      return {
-                                        value: opt as string,
-                                        label: opt as string,
-                                        status: false,
-                                      };
-                                    }
-
-                                    const baseOption = {
-                                      value: (opt as Option).key,
-                                      label: (opt as Option).label,
-                                      status: (opt as Option).status ?? false,
-                                    };
-
-                                    if (
-                                      typeof opt === 'object' &&
-                                      'children' in opt &&
-                                      Array.isArray(opt.children)
-                                    ) {
-                                      return {
-                                        label: baseOption.label,
-                                        options: [
-                                          baseOption,
-                                          ...opt.children.map((child) => ({
-                                            value: child.key,
-                                            label: child.label,
-                                            status: child.status ?? false,
-                                          })),
-                                        ],
-                                      };
-                                    }
-
-                                    return baseOption;
-                                  })
+                              Array.isArray(setting.options) &&
+                              checkOptionsType(setting.options) === 'Option[]'
+                                ? flattenOptions(setting.options as Option[])
+                                : Array.isArray(setting.options)
+                                ? (setting.options as string[]).map((opt) => ({
+                                    value: opt,
+                                    label: opt,
+                                    status: false,
+                                    path: opt,
+                                  }))
                                 : []
                             }
                             value={
                               Array.isArray(formData[setting._id])
                                 ? (formData[setting._id] as string[])
                                     .map((key) => {
-                                      let selectedOpt: Option | string | null =
-                                        null;
-
                                       if (Array.isArray(setting.options)) {
                                         const optionsType = checkOptionsType(
                                           setting.options,
                                         );
                                         if (optionsType === 'string[]') {
-                                          selectedOpt =
+                                          const opt =
                                             (setting.options as string[]).find(
                                               (o) => o === key,
                                             ) || null;
-                                        } else if (optionsType === 'Option[]') {
-                                          selectedOpt =
-                                            (setting.options as Option[]).find(
-                                              (o) => o.key === key,
-                                            ) || null;
-
-                                          if (!selectedOpt) {
-                                            for (const opt of setting.options as Option[]) {
-                                              if (
-                                                'children' in opt &&
-                                                Array.isArray(opt.children)
-                                              ) {
-                                                selectedOpt =
-                                                  opt.children.find(
-                                                    (c) => c.key === key,
-                                                  ) || null;
-                                                if (selectedOpt) break;
+                                          return opt
+                                            ? {
+                                                value: opt,
+                                                label: opt,
+                                                status: false,
+                                                path: opt,
                                               }
-                                            }
-                                          }
+                                            : null;
+                                        } else if (optionsType === 'Option[]') {
+                                          const opt = findOptionByKey(
+                                            setting.options as Option[],
+                                            key,
+                                          );
+                                          return opt
+                                            ? {
+                                                value: opt.key,
+                                                label: flattenOptions([opt])[0]
+                                                  .label,
+                                                status: opt.status,
+                                                path: flattenOptions([opt])[0]
+                                                  .label,
+                                              }
+                                            : null;
                                         }
                                       }
-
-                                      return selectedOpt
-                                        ? typeof selectedOpt === 'string'
-                                          ? {
-                                              value: selectedOpt,
-                                              label: selectedOpt,
-                                              status: false,
-                                            }
-                                          : {
-                                              value: selectedOpt.key,
-                                              label: selectedOpt.label,
-                                              status:
-                                                selectedOpt.status ?? false,
-                                            }
-                                        : null;
+                                      return null;
                                     })
                                     .filter(
                                       (
@@ -654,6 +661,7 @@ const EditSetting: React.FC = () => {
                                         value: string;
                                         label: string;
                                         status: boolean;
+                                        path: string;
                                       } => Boolean(item),
                                     )
                                 : []
@@ -758,46 +766,27 @@ const EditSetting: React.FC = () => {
                             (formData[setting._id] as string[]).length > 0
                               ? (formData[setting._id] as string[])
                                   .map((key) => {
-                                    let selectedOpt: Option | string | null =
-                                      null;
-
                                     if (Array.isArray(setting.options)) {
                                       const optionsType = checkOptionsType(
                                         setting.options,
                                       );
                                       if (optionsType === 'string[]') {
-                                        selectedOpt =
+                                        const opt =
                                           (setting.options as string[]).find(
                                             (o) => o === key,
                                           ) || null;
+                                        return opt || null;
                                       } else if (optionsType === 'Option[]') {
-                                        selectedOpt =
-                                          (setting.options as Option[]).find(
-                                            (o) => o.key === key,
-                                          ) || null;
-
-                                        if (!selectedOpt) {
-                                          for (const opt of setting.options as Option[]) {
-                                            if (
-                                              'children' in opt &&
-                                              Array.isArray(opt.children)
-                                            ) {
-                                              selectedOpt =
-                                                opt.children.find(
-                                                  (c) => c.key === key,
-                                                ) || null;
-                                              if (selectedOpt) break;
-                                            }
-                                          }
-                                        }
+                                        const opt = findOptionByKey(
+                                          setting.options as Option[],
+                                          key,
+                                        );
+                                        return opt
+                                          ? flattenOptions([opt])[0].label
+                                          : null;
                                       }
                                     }
-
-                                    return selectedOpt
-                                      ? typeof selectedOpt === 'string'
-                                        ? selectedOpt
-                                        : selectedOpt.label
-                                      : null;
+                                    return null;
                                   })
                                   .filter(Boolean)
                                   .join(', ') || 'None'
@@ -810,22 +799,16 @@ const EditSetting: React.FC = () => {
                           <Select
                             isClearable
                             options={
-                              Array.isArray(setting.options)
-                                ? setting.options.map((opt) => {
-                                    const optionsType = checkOptionsType(
-                                      setting.options,
-                                    );
-                                    if (optionsType === 'string[]') {
-                                      return {
-                                        value: opt as string,
-                                        label: opt as string,
-                                      };
-                                    }
-                                    return {
-                                      value: (opt as Option).key,
-                                      label: (opt as Option).label,
-                                    };
-                                  })
+                              Array.isArray(setting.options) &&
+                              checkOptionsType(setting.options) === 'Option[]'
+                                ? flattenOptions(setting.options as Option[])
+                                : Array.isArray(setting.options)
+                                ? (setting.options as string[]).map((opt) => ({
+                                    value: opt,
+                                    label: opt,
+                                    status: false,
+                                    path: opt,
+                                  }))
                                 : []
                             }
                             value={(() => {
@@ -841,15 +824,25 @@ const EditSetting: React.FC = () => {
                                         (o) => o === rawValue,
                                       ) || null;
                                     return opt
-                                      ? { value: opt, label: opt }
+                                      ? {
+                                          value: opt,
+                                          label: opt,
+                                          status: false,
+                                          path: opt,
+                                        }
                                       : null;
                                   } else if (optionsType === 'Option[]') {
-                                    const opt =
-                                      (setting.options as Option[]).find(
-                                        (o) => o.key === rawValue,
-                                      ) || null;
+                                    const opt = findOptionByKey(
+                                      setting.options as Option[],
+                                      rawValue,
+                                    );
                                     return opt
-                                      ? { value: opt.key, label: opt.label }
+                                      ? {
+                                          value: opt.key,
+                                          label: flattenOptions([opt])[0].label,
+                                          status: opt.status,
+                                          path: flattenOptions([opt])[0].label,
+                                        }
                                       : null;
                                   }
                                 }
@@ -954,11 +947,13 @@ const EditSetting: React.FC = () => {
                                         ) || null;
                                       return opt || 'None';
                                     } else if (optionsType === 'Option[]') {
-                                      const opt =
-                                        (setting.options as Option[]).find(
-                                          (o) => o.key === key,
-                                        ) || null;
-                                      return opt ? opt.label : 'None';
+                                      const opt = findOptionByKey(
+                                        setting.options as Option[],
+                                        key,
+                                      );
+                                      return opt
+                                        ? flattenOptions([opt])[0].label
+                                        : 'None';
                                     }
                                   }
                                   return 'None';
@@ -968,7 +963,7 @@ const EditSetting: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="py-5 px-2">
+                    <td className="py-5 px-2 text-center">
                       <button
                         onClick={() => handleSubmit(setting)}
                         className="bg-primary text-white p-2 rounded w-full disabled:opacity-50 transition-opacity"

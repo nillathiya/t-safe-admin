@@ -134,17 +134,17 @@ const CategorySettings: React.FC = () => {
                     key={title}
                     className="border-b border-[#eee] dark:border-strokedark"
                   >
-                    <td className="py-5 px-2">
+                    <td className="py-4 px-2">
                       <h5 className="font-medium text-black dark:text-white">
                         {index + 1}
                       </h5>
                     </td>
-                    <td className="py-5 px-2">
+                    <td className="py-4 px-2">
                       <h5 className="font-medium text-black dark:text-white">
                         {formatCategoryName(title)}
                       </h5>
                     </td>
-                    <td className="py-5 px-2 flex gap-2">
+                    <td className="py-4 px-2 flex gap-2">
                       <button
                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-center"
                         onClick={() => handleEditClick(title)}

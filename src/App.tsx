@@ -51,6 +51,7 @@ import NotFound from './components/NotFound';
 import DepositRequest from './pages/Fund/DepositRequest';
 import DepositHistory from './pages/Fund/DepositHistory';
 import CashDepositRequest from './pages/Fund/CashDepositRequest';
+import CashDepositHistory from './pages/Fund/CashDepositHistory';
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { companyInfo } = useSelector((state: RootState) => state.settings);
@@ -498,6 +499,15 @@ function App() {
             <>
               <PageTitle title="Deposit-History" />
               <CashDepositRequest />
+            </>
+          }
+        />
+        <Route
+          path="/fund/cash-deposit-history"
+          element={
+            <>
+              <PageTitle title="Deposit-History" />
+              <CashDepositHistory />
             </>
           }
         />

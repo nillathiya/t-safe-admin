@@ -462,183 +462,6 @@ const EditSetting: React.FC = () => {
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
                       )}
-                      {/* {setting.type.trim() === 'multi_values' &&
-                        (() => {
-                          let optionsArray: string[] = [];
-
-                          if (setting.options) {
-                            try {
-                              if (typeof setting.options === 'string') {
-                                if (
-                                  setting.options.startsWith('[') &&
-                                  setting.options.endsWith(']')
-                                ) {
-                                  optionsArray = JSON.parse(setting.options);
-                                } else {
-                                  optionsArray = setting.options
-                                    .split(',')
-                                    .map((v) =>
-                                      v.replace(/['"\[\]]/g, '').trim(),
-                                    );
-                                }
-                              } else if (Array.isArray(setting.options)) {
-                                optionsArray = setting.options;
-                              }
-                            } catch (error) {
-                              console.error(
-                                'Error parsing setting.options:',
-                                error,
-                              );
-                            }
-                          }
-
-                          const handleCheckboxChange = (
-                            settingId: string,
-                            value: string,
-                          ) => {
-                            setFormData((prevData) => {
-                              const currentValues = Array.isArray(
-                                prevData[settingId],
-                              )
-                                ? [...(prevData[settingId] as string[])]
-                                : [];
-
-                              if (currentValues.includes(value)) {
-                                const updatedValues = currentValues.filter(
-                                  (v) => v !== value,
-                                );
-                                return {
-                                  ...prevData,
-                                  [settingId]: updatedValues,
-                                };
-                              } else {
-                                const updatedValues = [...currentValues, value];
-                                return {
-                                  ...prevData,
-                                  [settingId]: updatedValues,
-                                };
-                              }
-                            });
-                          };
-
-                          return (
-                            <div className="check_box_scroll flex flex-col space-y-2">
-                              {optionsArray.map((opt) => (
-                                <label
-                                  key={opt}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      Array.isArray(formData[setting._id]) &&
-                                      formData[setting._id].includes(opt)
-                                    }
-                                    onChange={() =>
-                                      handleCheckboxChange(setting._id, opt)
-                                    }
-                                    className="border border-gray-300 h-4 w-4 text-primary rounded focus:ring-primary"
-                                  />
-                                  <span>{opt}</span>
-                                </label>
-                              ))}
-                            </div>
-                          );
-                        })()} */}
-                      {/* {setting.type.trim() === 'json_array' &&
-                        (() => {
-                          let parsedOptions: Record<string, string> = {};
-
-                          try {
-                            let firstParse = JSON.parse(setting.options);
-                            parsedOptions =
-                              typeof firstParse === 'string'
-                                ? JSON.parse(firstParse)
-                                : firstParse;
-                          } catch (error) {
-                            console.error(
-                              '❌ Error parsing setting.options:',
-                              error,
-                            );
-                          }
-
-                          if (
-                            !parsedOptions ||
-                            typeof parsedOptions !== 'object'
-                          ) {
-                            return <p>Error: Options are not valid</p>;
-                          }
-
-                          const optionsArray = Object.entries(
-                            parsedOptions,
-                          ).map(([key, label]) => {
-                            return { key, label };
-                          });
-
-                          return (
-                            <div className="flex flex-col space-y-2">
-                              <select
-                                value={
-                                  typeof formData[setting._id] === 'string'
-                                    ? formData[setting._id]
-                                    : ''
-                                }
-                                onChange={(e) =>
-                                  setFormData((prevData) => ({
-                                    ...prevData,
-                                    [setting._id]: e.target.value,
-                                  }))
-                                }
-                                className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
-                              >
-                                <option value="">Select an option</option>
-                                {optionsArray.length > 0 ? (
-                                  optionsArray.map((opt) => (
-                                    <option key={opt.key} value={opt.key}>
-                                      {String(opt.label)}
-                                    </option>
-                                  ))
-                                ) : (
-                                  <option disabled>No options available</option>
-                                )}
-                              </select>
-                            </div>
-                          );
-                        })()} */}
-                      {/* {setting.type === 'option' &&
-                        (() => {
-                          const options: string[] = Array.isArray(
-                            setting.options,
-                          )
-                            ? setting.options
-                            : typeof setting.options === 'string'
-                            ? setting.options
-                                .split(',')
-                                .map((opt) => opt.trim())
-                            : ['Yes', 'No'];
-
-                          const filteredOptions = options.filter(
-                            (opt) => opt.length > 0,
-                          );
-                          if (filteredOptions.length === 0) return null;
-
-                          return (
-                            <select
-                              value={(formData[setting._id] as string) || ''}
-                              onChange={(e) =>
-                                handleInputChange(setting._id, e.target.value)
-                              }
-                              className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
-                            >
-                              <option value="">Select an option</option>
-                              {filteredOptions.map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                          );
-                        })()} */}
 
                       {setting.type === 'boolean' && (
                         <div>
@@ -684,7 +507,7 @@ const EditSetting: React.FC = () => {
                         </div>
                       )}
                       {setting.type === 'array' && (
-                        <div>
+                        <div className="flex flex-col gap-2">
                           <Select
                             isMulti
                             options={
@@ -746,15 +569,84 @@ const EditSetting: React.FC = () => {
                               handleSelectChange(setting._id, selected, setting)
                             }
                             placeholder="Select options..."
+                            className="w-full"
+                            classNamePrefix="react-select"
                             styles={{
-                              container: (base) => ({
+                              control: (base) => ({
                                 ...base,
-                                width: 300,
+                                backgroundColor: 'transparent',
+                                borderColor: '#e5e7eb', // Light mode: gray-200
+                                borderRadius: '0.375rem', // Matches rounded-md
+                                padding: '0.5rem 1rem', // Matches py-2 px-4
+                                boxShadow: 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6', // Matches focus:border-primary (blue-500)
+                                },
+                                '&:focus-within': {
+                                  borderColor: '#3b82f6', // Matches focus:border-primary
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                backgroundColor: '#ffffff', // Light mode: white
+                                borderRadius: '0.375rem',
+                                marginTop: '0.25rem',
+                              }),
+                              option: (base, { isFocused, isSelected }) => ({
+                                ...base,
+                                backgroundColor: isSelected
+                                  ? '#3b82f6' // blue-500
+                                  : isFocused
+                                  ? '#eff6ff' // blue-50
+                                  : '#ffffff', // white
+                                color: isSelected ? '#ffffff' : '#1f2937', // gray-800
+                                '&:active': {
+                                  backgroundColor: '#2563eb', // blue-600
+                                },
+                              }),
+                              multiValue: (base) => ({
+                                ...base,
+                                backgroundColor: '#eff6ff', // blue-50
+                                borderRadius: '0.25rem',
+                              }),
+                              multiValueLabel: (base) => ({
+                                ...base,
+                                color: '#1f2937', // gray-800
+                              }),
+                              multiValueRemove: (base) => ({
+                                ...base,
+                                color: '#1f2937', // gray-800
+                                '&:hover': {
+                                  backgroundColor: '#dbeafe', // blue-100
+                                  color: '#2563eb', // blue-600
+                                },
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                color: '#9ca3af', // gray-400
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                color: '#1f2937', // gray-800
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                color: '#1f2937', // gray-800
                               }),
                             }}
-                            className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
+                            theme={(theme) => ({
+                              ...theme,
+                              colors: {
+                                ...theme.colors,
+                                primary: '#3b82f6', // blue-500
+                                primary25: '#eff6ff', // blue-50
+                                primary50: '#dbeafe', // blue-100
+                                neutral0: '#ffffff', // white
+                                neutral80: '#1f2937', // gray-800
+                              },
+                            })}
                           />
-                          <p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
                             Selected Values:{' '}
                             {Array.isArray(formData[setting._id]) &&
                             (formData[setting._id] as string[]).length > 0
@@ -781,7 +673,7 @@ const EditSetting: React.FC = () => {
                         </div>
                       )}
                       {setting.type === 'single-element-array' && (
-                        <div>
+                        <div className="flex flex-col gap-2">
                           <Select
                             isClearable
                             options={
@@ -877,18 +769,81 @@ const EditSetting: React.FC = () => {
                               handleSelectChange(setting._id, selected, setting)
                             }
                             placeholder="Select an option..."
+                            className="w-full"
+                            classNamePrefix="react-select"
+                            menuPortalTarget={document.body}
                             styles={{
-                              container: (base) => ({
+                              control: (base) => ({
                                 ...base,
-                                width: 300,
+                                backgroundColor: 'transparent',
+                                borderColor: '#e5e7eb', // Light mode: gray-200
+                                borderRadius: '0.375rem', // Matches rounded-md
+                                padding: '0.5rem 1rem', // Matches py-2 px-4
+                                boxShadow: 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6', // Matches focus:border-primary (blue-500)
+                                },
+                                '&:focus-within': {
+                                  borderColor: '#3b82f6', // Matches focus:border-primary
+                                },
                                 zIndex: 999,
                               }),
-                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                              menu: (base) => ({
+                                ...base,
+                                backgroundColor: '#ffffff', // Light mode: white
+                                borderRadius: '0.375rem',
+                                marginTop: '0.25rem',
+                                zIndex: 9999,
+                              }),
+                              menuPortal: (base) => ({
+                                ...base,
+                                zIndex: 9999,
+                              }),
+                              option: (base, { isFocused, isSelected }) => ({
+                                ...base,
+                                backgroundColor: isSelected
+                                  ? '#3b82f6' // blue-500
+                                  : isFocused
+                                  ? '#eff6ff' // blue-50
+                                  : '#ffffff', // white
+                                color: isSelected ? '#ffffff' : '#1f2937', // gray-800
+                                '&:active': {
+                                  backgroundColor: '#2563eb', // blue-600
+                                },
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                color: '#9ca3af', // gray-400
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                color: '#1f2937', // gray-800
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                color: '#1f2937', // gray-800
+                              }),
+                              clearIndicator: (base) => ({
+                                ...base,
+                                color: '#9ca3af', // gray-400
+                                '&:hover': {
+                                  color: '#2563eb', // blue-600
+                                },
+                              }),
                             }}
-                            menuPortalTarget={document.body}
-                            className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
+                            theme={(theme) => ({
+                              ...theme,
+                              colors: {
+                                ...theme.colors,
+                                primary: '#3b82f6', // blue-500
+                                primary25: '#eff6ff', // blue-50
+                                primary50: '#dbeafe', // blue-100
+                                neutral0: '#ffffff', // white
+                                neutral80: '#1f2937', // gray-800
+                              },
+                            })}
                           />
-                          <p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
                             Selected Value:{' '}
                             {formData[setting._id]
                               ? (() => {

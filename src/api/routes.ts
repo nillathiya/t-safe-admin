@@ -90,7 +90,7 @@ export const ROUTES: Routes = {
     ADMIN_LOGIN: `${API_URL}/auth/admin/login`,
     REGISTER: `${API_URL}/api/user/add`,
     LOGOUT: `${API_URL}/auth/logout`,
-    CHANGE_PASSWORD: `${API_URL}/api/auth/change-password`,
+    CHANGE_PASSWORD: `${API_URL}/auth/change-password`,
     IMPERSONATE: `${API_URL}/auth/admin/impersonate`,
   },
   SUPPORT: {

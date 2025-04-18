@@ -452,12 +452,14 @@ const Support: React.FC = () => {
                                       }}
                                       className="flex-1 border p-2 rounded-l-lg shadow-sm focus:ring focus:ring-green-300 bg-white dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
                                     />
-                                    <button
-                                      onClick={sendMessage}
-                                      className="bg-green-500 px-5 py-2 rounded-r-lg text-white shadow-md hover:bg-green-600 dark:hover:bg-green-400 transition"
-                                    >
-                                      Send
-                                    </button>
+                                    <div>
+                                      <button
+                                        onClick={sendMessage}
+                                        className="bg-green-500 px-4 py-2 rounded-r-lg text-white shadow-md hover:bg-green-600 dark:hover:bg-green-400 transition"
+                                      >
+                                        Send
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               </td>

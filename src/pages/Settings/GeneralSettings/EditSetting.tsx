@@ -267,10 +267,23 @@ const EditSetting: React.FC = () => {
             newFormData[setting._id] = [];
           }
         } else if (setting.type === 'single-element-array') {
-          newFormData[setting._id] =
-            Array.isArray(setting.value) && setting.value.length > 0
-              ? (setting.value as Option[])[0].key
-              : '';
+          console.log(checkOptionsType(setting.value));
+          // newFormData[setting._id] =
+          //   Array.isArray(setting.value) && setting.value.length > 0
+          //     ? (setting.value as Option[])[0].key
+          //     : '';
+
+          if (Array.isArray(setting.value) && setting.value.length > 0) {
+            const valueType = checkOptionsType(setting.value);
+            newFormData[setting._id] =
+              valueType === 'Option[]'
+                ? (setting.value as Option[])[0].key
+                : valueType === 'string[]'
+                ? (setting.value as string[])[0]
+                : '';
+          } else {
+            newFormData[setting._id] = '';
+          }
         } else if (setting.type === 'boolean') {
           newFormData[setting._id] = !!setting.value;
         } else if (setting.type === 'image') {
@@ -389,35 +402,32 @@ const EditSetting: React.FC = () => {
         typeof value === 'string' &&
         value
       ) {
-        let selectedOption: Option | null = null;
-
         if (Array.isArray(setting.options)) {
           const optionsType = checkOptionsType(setting.options);
+
           if (optionsType === 'Option[]') {
-            selectedOption = findOptionByKey(
+            const selectedOption = findOptionByKey(
               setting.options as Option[],
               value,
             );
-          } else if (optionsType === 'string[]') {
-            if ((setting.options as string[]).includes(value)) {
-              selectedOption = {
-                key: value,
-                label: value,
-                status: false,
-              };
-            }
-          }
-        }
 
-        value = selectedOption
-          ? [
-              {
-                key: selectedOption.key,
-                label: selectedOption.label,
-                status: selectedOption.status,
-              },
-            ]
-          : [];
+            value = selectedOption
+              ? [
+                  {
+                    key: selectedOption.key,
+                    label: selectedOption.label,
+                    status: selectedOption.status,
+                  },
+                ]
+              : [];
+          } else if (optionsType === 'string[]') {
+            value = (setting.options as string[]).includes(value)
+              ? [value]
+              : [];
+          }
+        } else {
+          value = [];
+        }
       }
 
       try {
@@ -786,6 +796,7 @@ const EditSetting: React.FC = () => {
                             options={flattenedOptionsMap[setting._id] || []}
                             value={(() => {
                               const rawValue = formData[setting._id];
+                              console.log('raw value', rawValue);
                               if (typeof rawValue === 'string' && rawValue) {
                                 const opt = (
                                   flattenedOptionsMap[setting._id] || []

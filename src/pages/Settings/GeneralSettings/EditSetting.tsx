@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../../../store/store';
@@ -65,7 +65,7 @@ function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
   return 'unknown';
 }
 
-// New: Recursive function to flatten options for react-select
+// Recursive function to flatten options for react-select
 const flattenOptions = (
   options: Option[],
   parentLabels: string[] = [],
@@ -94,7 +94,7 @@ const flattenOptions = (
   return result;
 };
 
-// New: Recursive function to find an option by key
+// Recursive function to find an option by key
 const findOptionByKey = (options: Option[], key: string): Option | null => {
   for (const opt of options) {
     if (opt.key === key) {
@@ -108,7 +108,19 @@ const findOptionByKey = (options: Option[], key: string): Option | null => {
   return null;
 };
 
-// New: Recursive function to reconstruct hierarchical options
+// Recursive function to extract all keys from hierarchical options
+const extractAllKeys = (options: Option[]): string[] => {
+  let keys: string[] = [];
+  options.forEach((opt) => {
+    keys.push(opt.key);
+    if (opt.children && Array.isArray(opt.children)) {
+      keys = [...keys, ...extractAllKeys(opt.children)];
+    }
+  });
+  return keys;
+};
+
+// Recursive function to reconstruct hierarchical options
 const buildHierarchicalOptions = (
   selectedKeys: string[],
   allOptions: Option[],
@@ -162,6 +174,29 @@ const EditSetting: React.FC = () => {
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
+
+  // Memoize flattened options for all settings
+  const flattenedOptionsMap = useMemo(() => {
+    const map: Record<
+      string,
+      { value: string; label: string; status: boolean; path: string }[]
+    > = {};
+    editableSettings.forEach((setting) => {
+      map[setting._id] =
+        Array.isArray(setting.options) &&
+        checkOptionsType(setting.options) === 'Option[]'
+          ? flattenOptions(setting.options as Option[])
+          : Array.isArray(setting.options)
+          ? (setting.options as string[]).map((opt) => ({
+              value: opt,
+              label: opt,
+              status: false,
+              path: opt,
+            }))
+          : [];
+    });
+    return map;
+  }, [editableSettings]);
 
   const fetchSettings = useCallback(async () => {
     if (!category) return;
@@ -223,9 +258,14 @@ const EditSetting: React.FC = () => {
 
       matchedSettings.forEach((setting) => {
         if (setting.type === 'array') {
-          newFormData[setting._id] = Array.isArray(setting.value)
-            ? (setting.value as Option[]).map((opt) => opt.key)
-            : [];
+          // Handle hierarchical Option[] values
+          if (Array.isArray(setting.value)) {
+            // Extract all keys, including nested children
+            const allKeys = extractAllKeys(setting.value as Option[]);
+            newFormData[setting._id] = allKeys;
+          } else {
+            newFormData[setting._id] = [];
+          }
         } else if (setting.type === 'single-element-array') {
           newFormData[setting._id] =
             Array.isArray(setting.value) && setting.value.length > 0
@@ -273,7 +313,6 @@ const EditSetting: React.FC = () => {
   const handleSelectChange = useCallback(
     (id: string, selectedOptions: string[], setting: SettingItem) => {
       let selectedValues: string[] | string;
-      console.log('selectedOptions', selectedOptions);
 
       if (setting.type === 'array') {
         selectedValues = selectedOptions;
@@ -284,7 +323,6 @@ const EditSetting: React.FC = () => {
       }
 
       setFormData((prev) => ({ ...prev, [id]: selectedValues }));
-      console.log('formData', formData);
     },
     [],
   );
@@ -601,58 +639,22 @@ const EditSetting: React.FC = () => {
                         <div className="flex flex-col gap-2">
                           <Select
                             isMulti
-                            options={
-                              Array.isArray(setting.options) &&
-                              checkOptionsType(setting.options) === 'Option[]'
-                                ? flattenOptions(setting.options as Option[])
-                                : Array.isArray(setting.options)
-                                ? (setting.options as string[]).map((opt) => ({
-                                    value: opt,
-                                    label: opt,
-                                    status: false,
-                                    path: opt,
-                                  }))
-                                : []
-                            }
+                            options={flattenedOptionsMap[setting._id] || []}
                             value={
                               Array.isArray(formData[setting._id])
                                 ? (formData[setting._id] as string[])
                                     .map((key) => {
-                                      if (Array.isArray(setting.options)) {
-                                        const optionsType = checkOptionsType(
-                                          setting.options,
-                                        );
-                                        if (optionsType === 'string[]') {
-                                          const opt =
-                                            (setting.options as string[]).find(
-                                              (o) => o === key,
-                                            ) || null;
-                                          return opt
-                                            ? {
-                                                value: opt,
-                                                label: opt,
-                                                status: false,
-                                                path: opt,
-                                              }
-                                            : null;
-                                        } else if (optionsType === 'Option[]') {
-                                          const opt = findOptionByKey(
-                                            setting.options as Option[],
-                                            key,
-                                          );
-                                          return opt
-                                            ? {
-                                                value: opt.key,
-                                                label: flattenOptions([opt])[0]
-                                                  .label,
-                                                status: opt.status,
-                                                path: flattenOptions([opt])[0]
-                                                  .label,
-                                              }
-                                            : null;
-                                        }
-                                      }
-                                      return null;
+                                      const opt = (
+                                        flattenedOptionsMap[setting._id] || []
+                                      ).find((o) => o.value === key);
+                                      return opt
+                                        ? {
+                                            value: opt.value,
+                                            label: opt.label,
+                                            status: opt.status,
+                                            path: opt.path,
+                                          }
+                                        : null;
                                     })
                                     .filter(
                                       (
@@ -766,27 +768,10 @@ const EditSetting: React.FC = () => {
                             (formData[setting._id] as string[]).length > 0
                               ? (formData[setting._id] as string[])
                                   .map((key) => {
-                                    if (Array.isArray(setting.options)) {
-                                      const optionsType = checkOptionsType(
-                                        setting.options,
-                                      );
-                                      if (optionsType === 'string[]') {
-                                        const opt =
-                                          (setting.options as string[]).find(
-                                            (o) => o === key,
-                                          ) || null;
-                                        return opt || null;
-                                      } else if (optionsType === 'Option[]') {
-                                        const opt = findOptionByKey(
-                                          setting.options as Option[],
-                                          key,
-                                        );
-                                        return opt
-                                          ? flattenOptions([opt])[0].label
-                                          : null;
-                                      }
-                                    }
-                                    return null;
+                                    const opt = (
+                                      flattenedOptionsMap[setting._id] || []
+                                    ).find((o) => o.value === key);
+                                    return opt ? opt.label : null;
                                   })
                                   .filter(Boolean)
                                   .join(', ') || 'None'
@@ -798,54 +783,21 @@ const EditSetting: React.FC = () => {
                         <div className="flex flex-col gap-2">
                           <Select
                             isClearable
-                            options={
-                              Array.isArray(setting.options) &&
-                              checkOptionsType(setting.options) === 'Option[]'
-                                ? flattenOptions(setting.options as Option[])
-                                : Array.isArray(setting.options)
-                                ? (setting.options as string[]).map((opt) => ({
-                                    value: opt,
-                                    label: opt,
-                                    status: false,
-                                    path: opt,
-                                  }))
-                                : []
-                            }
+                            options={flattenedOptionsMap[setting._id] || []}
                             value={(() => {
                               const rawValue = formData[setting._id];
                               if (typeof rawValue === 'string' && rawValue) {
-                                if (Array.isArray(setting.options)) {
-                                  const optionsType = checkOptionsType(
-                                    setting.options,
-                                  );
-                                  if (optionsType === 'string[]') {
-                                    const opt =
-                                      (setting.options as string[]).find(
-                                        (o) => o === rawValue,
-                                      ) || null;
-                                    return opt
-                                      ? {
-                                          value: opt,
-                                          label: opt,
-                                          status: false,
-                                          path: opt,
-                                        }
-                                      : null;
-                                  } else if (optionsType === 'Option[]') {
-                                    const opt = findOptionByKey(
-                                      setting.options as Option[],
-                                      rawValue,
-                                    );
-                                    return opt
-                                      ? {
-                                          value: opt.key,
-                                          label: flattenOptions([opt])[0].label,
-                                          status: opt.status,
-                                          path: flattenOptions([opt])[0].label,
-                                        }
-                                      : null;
-                                  }
-                                }
+                                const opt = (
+                                  flattenedOptionsMap[setting._id] || []
+                                ).find((o) => o.value === rawValue);
+                                return opt
+                                  ? {
+                                      value: opt.value,
+                                      label: opt.label,
+                                      status: opt.status,
+                                      path: opt.path,
+                                    }
+                                  : null;
                               }
                               return null;
                             })()}
@@ -936,27 +888,10 @@ const EditSetting: React.FC = () => {
                             {formData[setting._id]
                               ? (() => {
                                   const key = formData[setting._id] as string;
-                                  if (Array.isArray(setting.options)) {
-                                    const optionsType = checkOptionsType(
-                                      setting.options,
-                                    );
-                                    if (optionsType === 'string[]') {
-                                      const opt =
-                                        (setting.options as string[]).find(
-                                          (o) => o === key,
-                                        ) || null;
-                                      return opt || 'None';
-                                    } else if (optionsType === 'Option[]') {
-                                      const opt = findOptionByKey(
-                                        setting.options as Option[],
-                                        key,
-                                      );
-                                      return opt
-                                        ? flattenOptions([opt])[0].label
-                                        : 'None';
-                                    }
-                                  }
-                                  return 'None';
+                                  const opt = (
+                                    flattenedOptionsMap[setting._id] || []
+                                  ).find((o) => o.value === key);
+                                  return opt ? opt.label : 'None';
                                 })()
                               : 'None'}
                           </p>

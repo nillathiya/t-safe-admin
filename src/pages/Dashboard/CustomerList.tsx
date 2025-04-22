@@ -43,8 +43,11 @@ const NewCustomerList: React.FC = () => {
           borderBottom: '1px solid lightgray',
         }}
       >
-        <h6 className="fw-bold new-customerList">New Customer List</h6>
-        <Link to="/users/all-users" className="customer-list">
+        <h6 className="fw-bold new-customerList">New User List</h6>
+        <Link
+          to="/users/all-users"
+          className="customer-list cursor-pointer p-2"
+        >
           View All
         </Link>
       </div>

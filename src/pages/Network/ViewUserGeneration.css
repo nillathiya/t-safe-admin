@@ -1,0 +1,37 @@
+/* General tree node styles */
+.tree_generation {
+  filter: brightness(1.75) invert(1); /* Applies a visual filter */
+}
+
+/* rd3t (react-d3-tree) node style */
+.rd3t-node {
+  cursor: pointer;
+  fill: #777;
+  stroke: #000000;
+  stroke-width: 1px;
+}
+
+/* Light mode default (optional override if needed) */
+.darkmode_generation {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Dark mode styling using both `.dark` class and `[data-theme="dark"]` */
+html.dark .darkmode_generation,
+[data-theme='dark'] .darkmode_generation {
+  background: #273142;
+  color: #ffffff;
+}
+
+/* Stroke color default (light mode) */
+.darkmode-stroke {
+  stroke: rgb(31, 34, 51);
+}
+
+/* Dark mode stroke overrides */
+html.dark .darkmode-stroke,
+[data-theme='dark'] .darkmode-stroke {
+  stroke: #ffffff;
+  stroke-width: 1px;
+}

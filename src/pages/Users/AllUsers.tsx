@@ -278,10 +278,10 @@ const AllUsers: React.FC = () => {
                     </td>
                     <td className="table-cell">
                       {' '}
-                      {user.uSponsor?.username
-                        ? user.uSponsor.name
-                          ? `${user.uSponsor.username} (${user.uSponsor.name})`
-                          : user.uSponsor.username
+                      {user.sponsorUCode?.username
+                        ? user.sponsorUCode.name
+                          ? `${user.sponsorUCode.username} (${user.sponsorUCode.name})`
+                          : user.sponsorUCode.username
                         : 'N/A'}
                     </td>
                     <td className="table-cell"> {user.name || 'N/A'}</td>

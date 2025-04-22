@@ -349,10 +349,10 @@ const CashDepositHistory: React.FC = () => {
             }}
             className="relative z-50"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm">
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm mt-15">
               <div
                 ref={transactionDetailModelRef}
-                className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
+                className=" bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
               >
                 <h3 className="text-2xl font-bold mb-6 border-b border-gray-200 dark:border-gray-700 pb-3 text-gray-900 dark:text-white tracking-tight">
                   Transaction Details

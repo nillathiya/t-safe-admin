@@ -38,14 +38,17 @@ const DepositRequest: React.FC = () => {
 
   const companyCurrency = useCompanyCurrency();
   const transactionDetailModel = useRef<HTMLDivElement>(null);
+  const showImageModel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutsideModel = (e: MouseEvent) => {
       if (
         transactionDetailModel.current &&
-        !transactionDetailModel.current.contains(e.target as Node)
+        !transactionDetailModel.current.contains(e.target as Node) &&
+        !showImageModel.current
       ) {
         setSelectedTransaction(null);
+        setIsImageOpen(false);
       }
     };
 
@@ -266,6 +269,8 @@ const DepositRequest: React.FC = () => {
     );
   };
 
+  console.log('isImageOpen', isImageOpen);
+
   return (
     <div className="relative">
       <Breadcrumb pageName="Deposit Request" />
@@ -477,10 +482,13 @@ const DepositRequest: React.FC = () => {
               open={isImageOpen}
               onClose={() => setIsImageOpen(false)}
               className="relative z-50"
-              aria-labelledby="payment-slip-preview"
             >
-              <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm top-10">
-                <div className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105">
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm">
+                <Dialog.Panel
+                  className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
+                  onClick={(e) => e.stopPropagation()}
+                  ref={showImageModel}
+                >
                   <img
                     src={
                       selectedTransaction.paymentSlip.startsWith('http')
@@ -492,12 +500,12 @@ const DepositRequest: React.FC = () => {
                   />
                   <button
                     onClick={() => setIsImageOpen(false)}
-                    className="fixed w-10 h-10 top-2 right-2 p-2 bg-gray-900/80 dark:bg-gray-800/80 text-white rounded-full hover:bg-gray-700/90 focus:outline-none focus:ring-2 focus:ring-white z-50 backdrop-blur-sm text-center"
+                    className="absolute w-10 h-10 top-2 right-2 p-2 bg-gray-900/80 dark:bg-gray-800/80 text-white rounded-full hover:bg-gray-700/90 focus:outline-none focus:ring-2 focus:ring-white z-50 backdrop-blur-sm text-center"
                     aria-label="Close image preview"
                   >
                     ✕
                   </button>
-                </div>
+                </Dialog.Panel>
               </div>
             </Dialog>
           )}

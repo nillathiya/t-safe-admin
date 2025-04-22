@@ -52,6 +52,8 @@ import DepositRequest from './pages/Fund/DepositRequest';
 import DepositHistory from './pages/Fund/DepositHistory';
 import CashDepositRequest from './pages/Fund/CashDepositRequest';
 import CashDepositHistory from './pages/Fund/CashDepositHistory';
+import { API_URL } from './api/routes';
+import { useCompanyFavicon, useCompanyName } from './hooks/useCompanyInfo';
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { companyInfo } = useSelector((state: RootState) => state.settings);
@@ -67,48 +69,45 @@ function App() {
     setTimeout(() => setLoading(false), 1000);
   }, []);
 
-  // useEffect(() => {
-  //   const fetchCompanyInfo = async () => {
-  //     try {
-  //       await dispatch(getAllCompanyInfoAsync()).unwrap();
-  //     } catch (error: any) {
-  //       toast.error(error || 'Server Error');
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        await dispatch(getAllCompanyInfoAsync()).unwrap();
+      } catch (error: any) {
+        toast.error(error || 'Server Error');
+      }
+    };
 
-  //   if (companyInfo.length === 0) {
-  //     fetchCompanyInfo();
-  //   }
-  // }, [companyInfo.length, dispatch]);
+    if (companyInfo.length === 0) {
+      fetchCompanyInfo();
+    }
+  }, []);
 
-  // // Extract values correctly
-  // const appName =
-  //   companyInfo.find((data) => data.label === 'companyName')?.value ||
-  //   'Default App';
-  // const favicon =
-  //   companyInfo.find((data) => data.label === 'companyFavicon')?.value ||
-  //   '/default-favicon.ico';
+  console.log('companyInfo', companyInfo);
 
-  // console.log(favicon);
-  // useEffect(() => {
-  //   if (appName && favicon) {
-  //     // Set Application Name
-  //     document.title = appName;
+  // Extract values correctly
+  const appName = useCompanyName() || 'Default App';
+  const favicon = useCompanyFavicon() || '/default-favicon.ico';
+  console.log(favicon);
+  useEffect(() => {
+    if (appName && favicon) {
+      // Set Application Name
+      document.title = appName;
 
-  //     // Set Favicon
-  //     let link = document.querySelector(
-  //       "link[rel~='icon']",
-  //     ) as HTMLLinkElement | null;
+      // Set Favicon
+      let link = document.querySelector(
+        "link[rel~='icon']",
+      ) as HTMLLinkElement | null;
 
-  //     if (!link) {
-  //       link = document.createElement('link') as HTMLLinkElement;
-  //       link.rel = 'icon';
-  //       document.head.appendChild(link);
-  //     }
+      if (!link) {
+        link = document.createElement('link') as HTMLLinkElement;
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
 
-  //     link.href = `${API_URL}${favicon}`;
-  //   }
-  // }, [appName, favicon]);
+      link.href = `${API_URL}${favicon}`;
+    }
+  }, [appName, favicon]);
 
   return loading ? (
     <Loader loader="ClipLoader" size={50} color="blue" fullPage={true} />

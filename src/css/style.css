@@ -14,7 +14,7 @@
   }
   /* DataTable custom style */
   .table-bg {
-    @apply dark:bg-boxdark p-6 bg-white rounded-lg shadow-md;
+    @apply dark:bg-boxdark-2 p-6 bg-white rounded-lg shadow-md;
   }
 
   .table-header {

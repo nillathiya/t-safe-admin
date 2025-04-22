@@ -35,3 +35,16 @@ export const useCompanyInfoValues = (
 export const useCompanyCurrency = (): string | undefined => {
   return useCompanyInfo('Company', 'currency');
 };
+
+export const useCompanyName = (): string | undefined => {
+  return useCompanyInfo('Company', 'name');
+};
+
+export const useCompanyFavicon = (): string | undefined => {
+  return useCompanyInfo('Company', 'favicon');
+};
+
+
+export const useCompanyLogo = (): string | undefined => {
+  return useCompanyInfo('Company', 'logo');
+};

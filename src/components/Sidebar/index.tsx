@@ -14,6 +14,7 @@ import { adminLogoutAsync, clearUser } from '../../features/auth/authSlice';
 import toast from 'react-hot-toast';
 import { getAllCompanyInfoAsync } from '../../features/settings/settingsSlice';
 import { API_URL } from '../../api/routes';
+import { useCompanyLogo } from '../../hooks/useCompanyInfo';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -100,43 +101,31 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchCompanyInfo = async () => {
-  //     try {
-  //       await dispatch(getAllCompanyInfoAsync()).unwrap();
-  //     } catch (error: any) {
-  //       toast.error(error || 'Server Error');
-  //     }
-  //   };
-  //   if (companyInfo.length == 0) {
-  //     fetchCompanyInfo();
-  //   }
-  // }, []);
-
-  const companyLogo = companyInfo.find((data) => data.label === 'companyLogo')
-    ?.value;
+  const companyLogo =useCompanyLogo() || null;
 
   return (
     <aside
       ref={sidebar}
-      className={`absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-black duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0 ${
+      className={`absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-black-2 duration-300 ease-linear dark:bg-boxdark-2 lg:static lg:translate-x-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
-        <NavLink to="/">
-          {companyLogo ? (
-            <img src={`${API_URL}${companyLogo}`} width={130} height={100} />
-          ) : (
-            <div className="text-white flex items-center gap-2 justify-center">
-              <span className="bg-blue-700 p-1 rounded-lg">
-                <Icon Icon={ICONS.LOGO} className="" />
-              </span>
-              <span className="text-2xl font-medium">ADMIN PANEL</span>
-            </div>
-          )}
-        </NavLink>
+        <div className="flex justify-center w-full">
+          <NavLink to="/">
+            {companyLogo ? (
+              <img src={`${API_URL}${companyLogo}`} width={130} height={100} />
+            ) : (
+              <div className="text-white flex items-center gap-2 justify-center">
+                <span className="bg-blue-700 p-1 rounded-lg">
+                  <Icon Icon={ICONS.LOGO} className="" />
+                </span>
+                <span className="text-2xl font-medium">ADMIN PANEL</span>
+              </div>
+            )}
+          </NavLink>
+        </div>
 
         <button
           ref={trigger}
@@ -182,6 +171,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                       pathname === menu.path ||
                       menu.children.some((child) => pathname === child.path)
                     }
+
                   >
                     {(handleClick, open) => {
                       return (
@@ -189,7 +179,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                           {/* Main Menu Link */}
                           <NavLink
                             to={menu.children.length > 0 ? '#' : menu.path}
-                            className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                            className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 cursor-pointer${
                               (pathname === menu.path ||
                                 pathname.includes(menu.path)) &&
                               'bg-graydark dark:bg-meta-4'
@@ -241,7 +231,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                           {/* Dropdown Menu */}
                           {menu.children.length > 0 && (
                             <div
-                              className={`translate transform overflow-hidden ${
+                              className={`translate transform overflow-hidden cursor-pointer ${
                                 !open && 'hidden'
                               }`}
                             >

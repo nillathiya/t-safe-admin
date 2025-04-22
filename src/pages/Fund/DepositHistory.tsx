@@ -38,15 +38,18 @@ const DepositHistory: React.FC = () => {
 
   const companyCurrency = useCompanyCurrency();
   const transactionDetailModelRef = useRef<HTMLDivElement>(null);
+  const showImageModel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutsideModel = (e: MouseEvent) => {
       if (
         transactionDetailModelRef.current &&
-        !transactionDetailModelRef.current.contains(e.target as Node)
+        !transactionDetailModelRef.current.contains(e.target as Node) &&
+        !showImageModel.current
       ) {
         console.log('clicked outside');
         setSelectedTransaction(null);
+        setIsImageOpen(false);
       }
     };
 
@@ -431,7 +434,7 @@ const DepositHistory: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4">
+                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4 text-center">
                   {selectedTransaction.status === 0 && (
                     <>
                       <button
@@ -476,7 +479,11 @@ const DepositHistory: React.FC = () => {
               aria-labelledby="payment-slip-preview"
             >
               <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm top-10">
-                <div className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105">
+                <div
+                  className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
+                  onClick={(e) => e.stopPropagation()}
+                  ref={showImageModel}
+                >
                   <img
                     src={
                       selectedTransaction.paymentSlip.startsWith('http')

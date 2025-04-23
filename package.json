@@ -25,6 +25,7 @@
     "datatables.net-react": "^1.0.0",
     "datatables.net-responsive-dt": "^3.0.4",
     "datatables.net-select-dt": "^3.0.0",
+    "ethers": "^6.13.5",
     "file-saver": "^2.0.5",
     "flatpickr": "^4.6.13",
     "google-libphonenumber": "^3.2.40",

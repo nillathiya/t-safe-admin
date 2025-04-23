@@ -20,9 +20,9 @@ import {
   IUpdateUserFundTransactionPayload,
 } from '../../types';
 import { API_URL } from '../../api/routes';
-import { useCompanyCurrency, useCompanyInfo } from '../../hooks/useCompanyInfo';
+import { useCompanyCurrency } from '../../hooks/useCompanyInfo';
 
-const DepositRequest: React.FC = () => {
+const DepositHistory: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { fundTransactions, isLoading } = useSelector(
     (state: RootState) => state.transaction,
@@ -37,16 +37,17 @@ const DepositRequest: React.FC = () => {
   const [rejectReason, setRejectReason] = useState(''); // Rejection reason input
 
   const companyCurrency = useCompanyCurrency();
-  const transactionDetailModel = useRef<HTMLDivElement>(null);
+  const transactionDetailModelRef = useRef<HTMLDivElement>(null);
   const showImageModel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutsideModel = (e: MouseEvent) => {
       if (
-        transactionDetailModel.current &&
-        !transactionDetailModel.current.contains(e.target as Node) &&
+        transactionDetailModelRef.current &&
+        !transactionDetailModelRef.current.contains(e.target as Node) &&
         !showImageModel.current
       ) {
+        console.log('clicked outside');
         setSelectedTransaction(null);
         setIsImageOpen(false);
       }
@@ -58,14 +59,13 @@ const DepositRequest: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutsideModel);
     };
   }, []);
-
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setIsInitialLoading(true);
         const params = {
           txType: FUND_TX_TYPE.FUND_ADD,
-          status: 0,
+          status: '1,2',
           depositAccountType: 'manual',
         };
         await dispatch(getFundTransactionsAsync(params)).unwrap();
@@ -269,11 +269,9 @@ const DepositRequest: React.FC = () => {
     );
   };
 
-  console.log('isImageOpen', isImageOpen);
-
   return (
-    <div className="relative">
-      <Breadcrumb pageName="Deposit Request" />
+    <div>
+      <Breadcrumb pageName="Deposit History" />
       <div className="table-bg">
         <div className="card-body overflow-x-auto">
           <table ref={tableRef} className="table bordered-table display">
@@ -345,7 +343,6 @@ const DepositRequest: React.FC = () => {
       </div>
 
       {/* Transaction Detail Modal */}
-
       {selectedTransaction && (
         <>
           <Dialog
@@ -357,13 +354,10 @@ const DepositRequest: React.FC = () => {
             }}
             className="relative z-50"
           >
-            <div
-              // ref={transactionDetailModel}
-              className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm top-10"
-            >
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm">
               <div
                 className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
-                ref={transactionDetailModel}
+                ref={transactionDetailModelRef}
               >
                 <h3 className="text-2xl font-bold mb-6 border-b border-gray-200 dark:border-gray-700 pb-3 text-gray-900 dark:text-white tracking-tight">
                   Transaction Details
@@ -440,12 +434,12 @@ const DepositRequest: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4">
+                <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col gap-4 text-center">
                   {selectedTransaction.status === 0 && (
                     <>
                       <button
                         onClick={handleApprove}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-all duration-200 transform hover:-translate-y-1 text-center"
+                        className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-all duration-200 transform hover:-translate-y-1"
                       >
                         Approve
                       </button>
@@ -455,7 +449,7 @@ const DepositRequest: React.FC = () => {
                             ? handleReject()
                             : setShowRejectReason(true)
                         }
-                        className="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 transition-all duration-200 transform hover:-translate-y-1 text-center"
+                        className="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 transition-all duration-200 transform hover:-translate-y-1"
                       >
                         {showRejectReason ? 'Submit Rejection' : 'Reject'}
                       </button>
@@ -467,7 +461,7 @@ const DepositRequest: React.FC = () => {
                       setShowRejectReason(false);
                       setRejectReason('');
                     }}
-                    className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 transition-all duration-200 transform hover:-translate-y-1 text-center"
+                    className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 transition-all duration-200 transform hover:-translate-y-1"
                   >
                     Close
                   </button>
@@ -482,9 +476,10 @@ const DepositRequest: React.FC = () => {
               open={isImageOpen}
               onClose={() => setIsImageOpen(false)}
               className="relative z-50"
+              aria-labelledby="payment-slip-preview"
             >
-              <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm">
-                <Dialog.Panel
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 backdrop-blur-sm top-10">
+                <div
                   className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 max-h-[90vh] overflow-y-auto overflow-x-hidden transform transition-all duration-300 scale-100 hover:scale-105"
                   onClick={(e) => e.stopPropagation()}
                   ref={showImageModel}
@@ -500,12 +495,12 @@ const DepositRequest: React.FC = () => {
                   />
                   <button
                     onClick={() => setIsImageOpen(false)}
-                    className="absolute w-10 h-10 top-2 right-2 p-2 bg-gray-900/80 dark:bg-gray-800/80 text-white rounded-full hover:bg-gray-700/90 focus:outline-none focus:ring-2 focus:ring-white z-50 backdrop-blur-sm text-center"
+                    className="fixed w-10 h-10 top-2 right-2 p-2 bg-gray-900/80 dark:bg-gray-800/80 text-white rounded-full hover:bg-gray-700/90 focus:outline-none focus:ring-2 focus:ring-white z-50 backdrop-blur-sm text-center"
                     aria-label="Close image preview"
                   >
                     ✕
                   </button>
-                </Dialog.Panel>
+                </div>
               </div>
             </Dialog>
           )}
@@ -515,4 +510,4 @@ const DepositRequest: React.FC = () => {
   );
 };
 
-export default DepositRequest;
+export default DepositHistory;

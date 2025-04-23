@@ -13,6 +13,7 @@ import Loader from '../../common/Loader';
 import Tree from 'react-d3-tree';
 import { ICONS } from '../../constants';
 import Icon from '../../components/Icons/Icon';
+import './ViewUserGeneration.css';
 import { API_URL } from '../../api/routes';
 
 function viewUserGeneration() {
@@ -71,8 +72,8 @@ function viewUserGeneration() {
     );
 
     userGenerationTree.forEach((user) => {
-      if (user.uSponsor && userMap.has(user.uSponsor)) {
-        const parent = userMap.get(user.uSponsor);
+      if (user.sponsorUCode && userMap.has(user.sponsorUCode)) {
+        const parent = userMap.get(user.sponsorUCode);
         const child = userMap.get(user._id);
         child.attributes.Level = parent.attributes.Level + 1;
         parent.children.push(child);
@@ -95,8 +96,8 @@ function viewUserGeneration() {
           <circle
             r={15}
             className="cursor-pointer hover:scale-110 transition-transform"
-            fill="lightgray"
-            stroke="black"
+            fill="rgb(77, 92, 177)"
+            stroke="white"
             onClick={(e) => {
               e.stopPropagation();
               toggleNode();
@@ -107,9 +108,10 @@ function viewUserGeneration() {
           x="-5"
           y="5"
           fill="black"
+          stroke-width="1"
           fontSize="12"
           textAnchor="middle"
-          className="cursor-pointer font-bold text-center"
+          className="cursor-pointer font-bold text-center darkmode-stroke"
           onClick={(e) => {
             e.stopPropagation();
             toggleNode();
@@ -117,7 +119,14 @@ function viewUserGeneration() {
         >
           {nodeDatum.collapsed ? '+' : '-'}
         </text>
-
+        <rect
+          x="-22"
+          y="-52"
+          width="44"
+          height="44"
+          fill="rgb(77, 92, 177)"
+          rx="50%"
+        />
         <image
           href={
             nodeDatum.rawData.profileImage ||
@@ -127,7 +136,7 @@ function viewUserGeneration() {
           y="-50"
           height="40px"
           width="40px"
-          className="cursor-pointer hover:scale-110 transition-transform"
+          className="tree_generation cursor-pointer hover:scale-110 transition-transform"
           onClick={(e) => {
             e.stopPropagation();
             setSelectedUser(nodeDatum.rawData);
@@ -138,7 +147,8 @@ function viewUserGeneration() {
           x={25}
           y={-10}
           fill="black"
-          className="cursor-pointer text-gray-900 dark:text-gray-100"
+          stroke-width="1.5"
+          className="cursor-pointer text-gray-900 dark:text-gray-100 darkmode-stroke"
           onClick={(e) => {
             e.stopPropagation();
             setSelectedUser(nodeDatum.rawData);
@@ -174,7 +184,7 @@ function viewUserGeneration() {
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           User Team Hierarchy
         </h2>
-        <div className="border p-4 rounded-lg bg-gray-100 dark:bg-darkCard h-[500px] shadow-lg">
+        <div className="border p-4 rounded-lg bg-gray-100 dark:bg-darkCard h-[500px] shadow-lg darkmode_generation">
           {userGenerationTreeLoading ? (
             <Loader loader="ClipLoader" size={50} color="blue" />
           ) : treeData ? (
@@ -227,7 +237,7 @@ function viewUserGeneration() {
                         </p>
                         <p>
                           <strong>Sponsor:</strong>{' '}
-                          {selectedUserDetail?.user?.uSponsor?.username ||
+                          {selectedUserDetail?.user?.sponsorUCode?.username ||
                             'N/A'}
                         </p>
                         <p>

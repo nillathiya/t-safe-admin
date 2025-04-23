@@ -99,7 +99,7 @@ export const getAllCompanyInfo = async (): Promise<
   ApiResponse<ICompanyInfo[]>
 > => {
   try {
-    const response = await apiClient.post(
+    const response = await apiClient.get(
       ROUTES.SETTINGS.GET_COMPANY_INFO_SETTINGS,
     );
     return response.data;

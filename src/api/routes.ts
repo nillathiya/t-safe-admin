@@ -90,7 +90,7 @@ export const ROUTES: Routes = {
     ADMIN_LOGIN: `${API_URL}/auth/admin/login`,
     REGISTER: `${API_URL}/api/user/add`,
     LOGOUT: `${API_URL}/auth/logout`,
-    CHANGE_PASSWORD: `${API_URL}/api/auth/change-password`,
+    CHANGE_PASSWORD: `${API_URL}/auth/change-password`,
     IMPERSONATE: `${API_URL}/auth/admin/impersonate`,
   },
   SUPPORT: {
@@ -147,7 +147,7 @@ export const ROUTES: Routes = {
     UPDATE_USER: `${API_URL}/user/edit-profile`,
     UPDATE_PROFILE: `${API_URL}/user/edit-profile`,
     CHECK_NAME: `${API_URL}/user/check-name`,
-    GET_GENERATION_TREE: `${API_URL}/api/user/generation-tree`,
+    GET_GENERATION_TREE: `${API_URL}/user/generation-tree`,
     GET_DETAILS_WITH_INVEST_INFO: `${API_URL}/api/user/details-with-investment`,
     ADD_MEMBER: `${API_URL}/api/user/create`,
   },

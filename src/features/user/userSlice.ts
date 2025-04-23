@@ -260,7 +260,9 @@ const userSlice = createSlice({
           u._id === action.payload._id ? action.payload : u,
         );
         state.user =
-          action.payload._id === state.user?._id ? action.payload : state.user;
+          !state.user || state.user._id === action.payload._id
+            ? action.payload
+            : state.user;
       })
       .addCase(updateUserProfileAsync.rejected, (state) => {
         state.isLoading = false;
@@ -310,30 +312,31 @@ const userSlice = createSlice({
       .addCase(getUserGenerationTreeAsync.fulfilled, (state, action) => {
         state.isLoading = false;
         const response = action.payload;
-        const encryptedUserGenerationData = response.data;
+        // const encryptedUserGenerationData = response.data;
+        state.userGenerationTree = action.payload.data;
 
-        if (!encryptedUserGenerationData) {
-          console.error('Error: No encrypted data received!');
-          return;
-        }
+        // if (!encryptedUserGenerationData) {
+        //   console.error('Error: No encrypted data received!');
+        //   return;
+        // }
 
-        try {
-          const decryptedData = CryptoJS.AES.decrypt(
-            encryptedUserGenerationData,
-            CRYPTO_SECRET_KEY,
-          ).toString(CryptoJS.enc.Utf8);
+        // try {
+        //   const decryptedData = CryptoJS.AES.decrypt(
+        //     encryptedUserGenerationData,
+        //     CRYPTO_SECRET_KEY,
+        //   ).toString(CryptoJS.enc.Utf8);
 
-          if (!decryptedData) {
-            console.error('Error: Decryption resulted in empty data!');
-            return;
-          }
+        //   if (!decryptedData) {
+        //     console.error('Error: Decryption resulted in empty data!');
+        //     return;
+        //   }
 
-          const decryptedUserGenerationData = JSON.parse(decryptedData);
+        //   const decryptedUserGenerationData = JSON.parse(decryptedData);
 
-          state.userGenerationTree = decryptedUserGenerationData;
-        } catch (error) {
-          console.error('Decryption failed:', error);
-        }
+        // state.userGenerationTree = decryptedUserGenerationData;
+        // } catch (error) {
+        //   console.error('Decryption failed:', error);
+        // }
       })
       .addCase(getUserGenerationTreeAsync.rejected, (state) => {
         state.isLoading = false;

@@ -31,97 +31,101 @@ const Dashboard: React.FC = () => {
     royaltyReward: 0,
     arbBonusReward: 0,
   });
-  const companyCurrency = companyInfo.find((data) => data.label === 'currency')
-    ?.value;
+  const companyCurrency = companyInfo.find(
+    (data) => data.title === 'Company' && data.slug === 'currency',
+  )?.value;
 
-  useEffect(() => {
-    let isMounted = true;
+  useEffect(
+    () => {
+      let isMounted = true;
 
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        console.log('loading is start');
+      const fetchData = async () => {
+        try {
+          setIsLoading(true);
+          console.log('loading is start');
 
-        if (isMounted) {
-          const apiCalls = [];
+          if (isMounted) {
+            const apiCalls = [];
 
-          // Orders API
-          if (orders.length === 0) {
-            apiCalls.push(dispatch(getAllOrdersAsync()).unwrap());
-          }
+            // Orders API
+            if (orders.length === 0) {
+              apiCalls.push(dispatch(getAllOrdersAsync()).unwrap());
+            }
 
-          // Users API
-          if (users.length === 0) {
-            apiCalls.push(dispatch(getAllUserAsync()).unwrap());
-          }
+            // Users API
+            if (users.length === 0) {
+              apiCalls.push(dispatch(getAllUserAsync()).unwrap());
+            }
 
-          // Company Info API
-          // if (companyInfo.length === 0) {
-          //   apiCalls.push(dispatch(getAllCompanyInfoAsync()).unwrap());
-          // }
+            // Company Info API
+            if (companyInfo.length === 0) {
+              apiCalls.push(dispatch(getAllCompanyInfoAsync()).unwrap());
+            }
 
-          // Income Transactions (All)
-          if (incomeTransactions.length === 0) {
-            const formData = { txType: 'all' };
+            // Income Transactions (All)
+            if (incomeTransactions.length === 0) {
+              const formData = { txType: 'all' };
+              apiCalls.push(
+                dispatch(getAllIncomeTransactionAsync(formData)).unwrap(),
+              );
+            }
+
+            // Income Transactions (Income)
+            const incomeFormData = { txType: 'income' };
             apiCalls.push(
-              dispatch(getAllIncomeTransactionAsync(formData)).unwrap(),
+              dispatch(getAllIncomeTransactionAsync(incomeFormData)).unwrap(),
             );
+
+            const responses = await Promise.all(apiCalls);
+            const incomeResponse = responses[responses.length - 1];
+            const transactions = incomeResponse?.data ?? [];
+
+            let total = 0,
+              staking = 0,
+              profitSharing = 0,
+              royalty = 0,
+              arbBonus = 0;
+
+            transactions.forEach((tx: any) => {
+              total += tx.amount;
+              if (tx.source === 'reward') staking += tx.amount;
+              if (tx.source === 'direct') profitSharing += tx.amount;
+              if (tx.source === 'roi') royalty += tx.amount;
+              if (tx.source === 'royalty') arbBonus += tx.amount;
+            });
+
+            setIncomeData({
+              totalIncome: total,
+              stakingReward: staking,
+              profitSharingReward: profitSharing,
+              royaltyReward: royalty,
+              arbBonusReward: arbBonus,
+            });
           }
-
-          // Income Transactions (Income)
-          const incomeFormData = { txType: 'income' };
-          apiCalls.push(
-            dispatch(getAllIncomeTransactionAsync(incomeFormData)).unwrap(),
-          );
-
-          const responses = await Promise.all(apiCalls);
-          const incomeResponse = responses[responses.length - 1];
-          const transactions = incomeResponse?.data ?? [];
-
-          let total = 0,
-            staking = 0,
-            profitSharing = 0,
-            royalty = 0,
-            arbBonus = 0;
-
-          transactions.forEach((tx: any) => {
-            total += tx.amount;
-            if (tx.source === 'reward') staking += tx.amount;
-            if (tx.source === 'direct') profitSharing += tx.amount;
-            if (tx.source === 'roi') royalty += tx.amount;
-            if (tx.source === 'royalty') arbBonus += tx.amount;
-          });
-
-          setIncomeData({
-            totalIncome: total,
-            stakingReward: staking,
-            profitSharingReward: profitSharing,
-            royaltyReward: royalty,
-            arbBonusReward: arbBonus,
-          });
+        } catch (error: any) {
+          toast.error(error || 'Service error');
+        } finally {
+          console.log('loading is complete');
+          if (isMounted) setIsLoading(false);
         }
-      } catch (error: any) {
-        toast.error(error || 'Service error');
-      } finally {
-        console.log('loading is complete');
-        if (isMounted) setIsLoading(false);
+      };
+
+      if (loggedInUser?._id) {
+        fetchData();
       }
-    };
 
-    if (loggedInUser?._id) {
-      fetchData();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    // loggedInUser,
-    // orders.length,
-    // users.length,
-    // incomeTransactions.length,
-    // dispatch,
-  ]);
+      return () => {
+        isMounted = false;
+      };
+    },
+    [
+      // loggedInUser,
+      // orders.length,
+      // users.length,
+      // incomeTransactions.length,
+      // dispatch,
+    ],
+  );
 
   const activeUserCount = users.reduce(
     (acc, user) => (user.accountStatus?.activeStatus === 1 ? acc + 1 : acc),

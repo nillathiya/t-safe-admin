@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../../../store/store';
@@ -19,6 +19,7 @@ interface Option {
   key: string;
   label: string;
   status: boolean;
+  children?: Option[];
 }
 
 interface SettingItem {
@@ -37,25 +38,18 @@ interface SettingItem {
     | 'boolean'
     | 'single-element-array'
     | 'number';
-  options?: string[] | string | Option[] | boolean;
+  options?: string[] | Option[] | boolean;
 }
 
 function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
-  // Handle undefined or non-array cases
   if (!options || !Array.isArray(options)) {
     return 'unknown';
   }
-
-  // If array is empty, type cannot be determined reliably
   if (options.length === 0) {
     return 'unknown';
   }
-
-  // Check the type of the first element
   const firstElement = options[0];
-
   if (typeof firstElement === 'string') {
-    // Verify all elements are strings
     const allStrings = options.every((item: any) => typeof item === 'string');
     return allStrings ? 'string[]' : 'unknown';
   } else if (
@@ -63,15 +57,108 @@ function checkOptionsType(options: any): 'string[]' | 'Option[]' | 'unknown' {
     firstElement !== null &&
     'key' in firstElement
   ) {
-    // Verify all elements are objects with a 'key' property
     const allOptions = options.every(
       (item: any) => typeof item === 'object' && item !== null && 'key' in item,
     );
     return allOptions ? 'Option[]' : 'unknown';
   }
-
   return 'unknown';
 }
+
+// Recursive function to flatten options for react-select
+const flattenOptions = (
+  options: Option[],
+  parentLabels: string[] = [],
+): { value: string; label: string; status: boolean; path: string }[] => {
+  let result: {
+    value: string;
+    label: string;
+    status: boolean;
+    path: string;
+  }[] = [];
+  options.forEach((opt) => {
+    const currentPath = [...parentLabels, opt.label].join(' > ');
+    result.push({
+      value: opt.key,
+      label: currentPath,
+      status: opt.status,
+      path: currentPath,
+    });
+    if (opt.children && Array.isArray(opt.children)) {
+      result = [
+        ...result,
+        ...flattenOptions(opt.children, [...parentLabels, opt.label]),
+      ];
+    }
+  });
+  return result;
+};
+
+// Recursive function to find an option by key
+const findOptionByKey = (options: Option[], key: string): Option | null => {
+  for (const opt of options) {
+    if (opt.key === key) {
+      return opt;
+    }
+    if (opt.children && Array.isArray(opt.children)) {
+      const found = findOptionByKey(opt.children, key);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// Recursive function to extract all keys from hierarchical options
+const extractAllKeys = (options: Option[]): string[] => {
+  let keys: string[] = [];
+  options.forEach((opt) => {
+    keys.push(opt.key);
+    if (opt.children && Array.isArray(opt.children)) {
+      keys = [...keys, ...extractAllKeys(opt.children)];
+    }
+  });
+  return keys;
+};
+
+// Recursive function to reconstruct hierarchical options
+const buildHierarchicalOptions = (
+  selectedKeys: string[],
+  allOptions: Option[],
+): Option[] => {
+  const result: Option[] = [];
+
+  const processOption = (opt: Option, parentKeys: string[]): Option | null => {
+    const isSelected = selectedKeys.includes(opt.key);
+    let children: Option[] = [];
+
+    if (opt.children && Array.isArray(opt.children)) {
+      children = opt.children
+        .map((child) => processOption(child, [...parentKeys, opt.key]))
+        .filter((child): child is Option => child !== null);
+    }
+
+    if (isSelected || children.length > 0) {
+      return {
+        key: opt.key,
+        label: opt.label,
+        status: opt.status,
+        ...(children.length > 0 && { children }),
+      };
+    }
+
+    return null;
+  };
+
+  allOptions.forEach((opt) => {
+    const processed = processOption(opt, []);
+    if (processed) {
+      result.push(processed);
+    }
+  });
+
+  return result;
+};
+
 const EditSetting: React.FC = () => {
   const { category, title } = useParams<{ category: string; title: string }>();
   const navigate = useNavigate();
@@ -82,11 +169,34 @@ const EditSetting: React.FC = () => {
   const [settings, setSettings] = useState<SettingItem[]>([]);
   const [editableSettings, setEditableSettings] = useState<SettingItem[]>([]);
   const [formData, setFormData] = useState<
-    Record<string, string | string[] | Option[] | File | boolean>
+    Record<string, string | string[] | File | boolean>
   >({});
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
+
+  // Memoize flattened options for all settings
+  const flattenedOptionsMap = useMemo(() => {
+    const map: Record<
+      string,
+      { value: string; label: string; status: boolean; path: string }[]
+    > = {};
+    editableSettings.forEach((setting) => {
+      map[setting._id] =
+        Array.isArray(setting.options) &&
+        checkOptionsType(setting.options) === 'Option[]'
+          ? flattenOptions(setting.options as Option[])
+          : Array.isArray(setting.options)
+          ? (setting.options as string[]).map((opt) => ({
+              value: opt,
+              label: opt,
+              status: false,
+              path: opt,
+            }))
+          : [];
+    });
+    return map;
+  }, [editableSettings]);
 
   const fetchSettings = useCallback(async () => {
     if (!category) return;
@@ -99,15 +209,15 @@ const EditSetting: React.FC = () => {
           break;
         case 'user-settings': {
           const result = await dispatch(getUserSettingsAsync()).unwrap();
-          setSettings(result.data); // Use API response directly
+          setSettings(result.data);
           break;
         }
         case 'admin-settings': {
           if (adminSettings.length === 0) {
             const result = await dispatch(getAdminSettingsAsync()).unwrap();
-            setSettings(result.data); // Use API response directly
+            setSettings(result.data);
           } else {
-            setSettings(adminSettings); // Use existing adminSettings
+            setSettings(adminSettings);
           }
           break;
         }
@@ -122,15 +232,13 @@ const EditSetting: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [category, dispatch, adminSettings, navigate]); // Removed userSettings
+  }, [category, dispatch, adminSettings, navigate]);
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
 
   useEffect(() => {
-    console.log('settings', settings);
-    // Only process settings if they exist and title is provided
     if (settings.length > 0 && title) {
       const matchedSettings = settings.filter(
         (setting) => setting.title.trim() === title.trim(),
@@ -144,27 +252,50 @@ const EditSetting: React.FC = () => {
 
       setEditableSettings(matchedSettings);
 
-      const newFormData: Record<
-        string,
-        string | string[] | Option[] | File | boolean
-      > = {};
+      const newFormData: Record<string, string | string[] | File | boolean> =
+        {};
       const newFilePreviews: Record<string, string> = {};
 
       matchedSettings.forEach((setting) => {
-        if (setting.type === 'array' && Array.isArray(setting.value)) {
-          newFormData[setting._id] = (setting.value as Option[]).map(
-            (opt) => opt.key,
-          );
+        if (setting.type === 'array') {
+          // Handle hierarchical Option[] values
+          if (Array.isArray(setting.value)) {
+            // Extract all keys, including nested children
+            const allKeys = extractAllKeys(setting.value as Option[]);
+            newFormData[setting._id] = allKeys;
+          } else {
+            newFormData[setting._id] = [];
+          }
+        } else if (setting.type === 'single-element-array') {
+          console.log(checkOptionsType(setting.value));
+          // newFormData[setting._id] =
+          //   Array.isArray(setting.value) && setting.value.length > 0
+          //     ? (setting.value as Option[])[0].key
+          //     : '';
+
+          if (Array.isArray(setting.value) && setting.value.length > 0) {
+            const valueType = checkOptionsType(setting.value);
+            newFormData[setting._id] =
+              valueType === 'Option[]'
+                ? (setting.value as Option[])[0].key
+                : valueType === 'string[]'
+                ? (setting.value as string[])[0]
+                : '';
+          } else {
+            newFormData[setting._id] = '';
+          }
+        } else if (setting.type === 'boolean') {
+          newFormData[setting._id] = !!setting.value;
+        } else if (setting.type === 'image') {
+          newFormData[setting._id] = setting.value as string;
         } else {
-          newFormData[setting._id] = setting.value;
+          newFormData[setting._id] = String(setting.value);
         }
 
-        if (setting.type === 'image' && setting.value) {
-          newFilePreviews[setting._id] = (setting.value as string).startsWith(
-            '/uploads',
-          )
+        if (setting.type === 'image' && typeof setting.value === 'string') {
+          newFilePreviews[setting._id] = setting.value.startsWith('/uploads')
             ? `${API_URL}${setting.value}`
-            : (setting.value as string);
+            : setting.value;
         }
       });
 
@@ -172,6 +303,7 @@ const EditSetting: React.FC = () => {
       setFilePreviews(newFilePreviews);
     }
   }, [settings, title]);
+
   const handleInputChange = useCallback(
     (id: string, value: string | string[] | File, setting: SettingItem) => {
       setFormData((prev) => {
@@ -181,12 +313,6 @@ const EditSetting: React.FC = () => {
           case 'number':
             newValue = parseFloat(value as string);
             break;
-          // case 'file':
-          //   newValue = value as File;
-          //   break;
-          // case 'multi-select':
-          //   newValue = value as string[];
-          //   break;
           default:
             newValue = value;
         }
@@ -198,25 +324,17 @@ const EditSetting: React.FC = () => {
   );
 
   const handleSelectChange = useCallback(
-    (id: string, selectedOptions: any, setting: any) => {
-      // const selectedValues = selectedOptions
-      //   ? selectedOptions.map((option: { value: string }) => option.value)
-      //   : [];
-
+    (id: string, selectedOptions: string[], setting: SettingItem) => {
       let selectedValues: string[] | string;
 
       if (setting.type === 'array') {
-        // Multi-select: store array of values
-        selectedValues = selectedOptions
-          ? selectedOptions.map((option: { value: string }) => option.value)
-          : [];
+        selectedValues = selectedOptions;
       } else if (setting.type === 'single-element-array') {
-        // Single-select: store single value or undefined
-        selectedValues =
-          selectedOptions && !Array.isArray(selectedOptions)
-            ? selectedOptions.value
-            : '';
+        selectedValues = selectedOptions.length > 0 ? selectedOptions[0] : '';
+      } else {
+        selectedValues = selectedOptions;
       }
+
       setFormData((prev) => ({ ...prev, [id]: selectedValues }));
     },
     [],
@@ -252,51 +370,70 @@ const EditSetting: React.FC = () => {
       if (!category) return;
 
       setIsUpdating((prev) => ({ ...prev, [setting._id]: true }));
-      let value;
-      value = formData[setting._id];
-      console.log('setting', setting);
-      console.log('selected value', value);
+      let value: string | string[] | boolean | Option[] | File =
+        formData[setting._id];
 
-      // handle value if value is in array ["fund_wallet"];
-      if (
-        Array.isArray(value) &&
-        value.every((v) => typeof v === 'string') &&
-        Array.isArray(setting.value)
-      ) {
+      // Handle array type (multi-select)
+      if (setting.type === 'array' && Array.isArray(value)) {
         const selectedKeys = value as string[];
-        value = (setting.options as Option[]).filter((item) =>
-          selectedKeys.includes(item.key),
-        );
+        if (Array.isArray(setting.options)) {
+          const optionsType = checkOptionsType(setting.options);
+          if (optionsType === 'Option[]') {
+            // Rebuild hierarchical options
+            value = buildHierarchicalOptions(
+              selectedKeys,
+              setting.options as Option[],
+            );
+          } else if (optionsType === 'string[]') {
+            value = (setting.options as string[])
+              .filter((key) => selectedKeys.includes(key))
+              .map((key) => ({
+                key,
+                label: key,
+                status: false,
+              }));
+          }
+        }
       }
 
-      // handle value if value is in single "fund_wallet"
-      if (!Array.isArray(value) && typeof value === 'string') {
-        const selectedKeys = value;
-
-        // Check if setting.options is defined and an array
-        if (setting.options && Array.isArray(setting.options)) {
+      // Handle single-element-array type (single-select)
+      if (
+        setting.type === 'single-element-array' &&
+        typeof value === 'string' &&
+        value
+      ) {
+        if (Array.isArray(setting.options)) {
           const optionsType = checkOptionsType(setting.options);
 
           if (optionsType === 'Option[]') {
-            // Handle Option[] array
-            value = (setting.options as Option[]).filter((item: Option) =>
-              selectedKeys.includes(item.key),
+            const selectedOption = findOptionByKey(
+              setting.options as Option[],
+              value,
             );
+
+            value = selectedOption
+              ? [
+                  {
+                    key: selectedOption.key,
+                    label: selectedOption.label,
+                    status: selectedOption.status,
+                  },
+                ]
+              : [];
           } else if (optionsType === 'string[]') {
-            // Handle string[] array
-            value = (setting.options as string[]).filter((item: string) =>
-              selectedKeys.includes(item),
-            );
+            value = (setting.options as string[]).includes(value)
+              ? [value]
+              : [];
           }
-          // If 'unknown', you can decide to skip or handle differently
+        } else {
+          value = [];
         }
       }
-      console.log('value', value);
+
       try {
         let result;
 
         if (setting.type === 'image') {
-          // Handle FormData only for image
           const formDataToSend = new FormData();
           formDataToSend.append('file', value as File);
 
@@ -324,7 +461,7 @@ const EditSetting: React.FC = () => {
           const payload = {
             id: setting._id,
             formData: {
-              value: typeof value === 'string' ? value : value,
+              value,
             },
           };
 
@@ -345,7 +482,14 @@ const EditSetting: React.FC = () => {
         if (result?.status === 'success' && result?.data) {
           setFormData((prev) => ({
             ...prev,
-            [setting._id]: result.data.value,
+            [setting._id]:
+              setting.type === 'array'
+                ? (result.data.value as Option[]).map((opt) => opt.key)
+                : setting.type === 'single-element-array' &&
+                  Array.isArray(result.data.value) &&
+                  result.data.value.length > 0
+                ? (result.data.value as Option[])[0].key
+                : result.data.value,
           }));
 
           if (setting.type === 'image') {
@@ -380,8 +524,6 @@ const EditSetting: React.FC = () => {
     return <div className="p-6">Invalid category or title</div>;
   }
 
-  // console.log('formData', formData);
-  console.log('editableSettings', editableSettings);
   return (
     <>
       <Breadcrumb pageName={`Edit ${title} (${category})`} />
@@ -462,184 +604,6 @@ const EditSetting: React.FC = () => {
                           className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
                         />
                       )}
-                      {/* {setting.type.trim() === 'multi_values' &&
-                        (() => {
-                          let optionsArray: string[] = [];
-
-                          if (setting.options) {
-                            try {
-                              if (typeof setting.options === 'string') {
-                                if (
-                                  setting.options.startsWith('[') &&
-                                  setting.options.endsWith(']')
-                                ) {
-                                  optionsArray = JSON.parse(setting.options);
-                                } else {
-                                  optionsArray = setting.options
-                                    .split(',')
-                                    .map((v) =>
-                                      v.replace(/['"\[\]]/g, '').trim(),
-                                    );
-                                }
-                              } else if (Array.isArray(setting.options)) {
-                                optionsArray = setting.options;
-                              }
-                            } catch (error) {
-                              console.error(
-                                'Error parsing setting.options:',
-                                error,
-                              );
-                            }
-                          }
-
-                          const handleCheckboxChange = (
-                            settingId: string,
-                            value: string,
-                          ) => {
-                            setFormData((prevData) => {
-                              const currentValues = Array.isArray(
-                                prevData[settingId],
-                              )
-                                ? [...(prevData[settingId] as string[])]
-                                : [];
-
-                              if (currentValues.includes(value)) {
-                                const updatedValues = currentValues.filter(
-                                  (v) => v !== value,
-                                );
-                                return {
-                                  ...prevData,
-                                  [settingId]: updatedValues,
-                                };
-                              } else {
-                                const updatedValues = [...currentValues, value];
-                                return {
-                                  ...prevData,
-                                  [settingId]: updatedValues,
-                                };
-                              }
-                            });
-                          };
-
-                          return (
-                            <div className="check_box_scroll flex flex-col space-y-2">
-                              {optionsArray.map((opt) => (
-                                <label
-                                  key={opt}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      Array.isArray(formData[setting._id]) &&
-                                      formData[setting._id].includes(opt)
-                                    }
-                                    onChange={() =>
-                                      handleCheckboxChange(setting._id, opt)
-                                    }
-                                    className="border border-gray-300 h-4 w-4 text-primary rounded focus:ring-primary"
-                                  />
-                                  <span>{opt}</span>
-                                </label>
-                              ))}
-                            </div>
-                          );
-                        })()} */}
-                      {/* {setting.type.trim() === 'json_array' &&
-                        (() => {
-                          let parsedOptions: Record<string, string> = {};
-
-                          try {
-                            let firstParse = JSON.parse(setting.options);
-                            parsedOptions =
-                              typeof firstParse === 'string'
-                                ? JSON.parse(firstParse)
-                                : firstParse;
-                          } catch (error) {
-                            console.error(
-                              '❌ Error parsing setting.options:',
-                              error,
-                            );
-                          }
-
-                          if (
-                            !parsedOptions ||
-                            typeof parsedOptions !== 'object'
-                          ) {
-                            return <p>Error: Options are not valid</p>;
-                          }
-
-                          const optionsArray = Object.entries(
-                            parsedOptions,
-                          ).map(([key, label]) => {
-                            return { key, label };
-                          });
-
-                          return (
-                            <div className="flex flex-col space-y-2">
-                              <select
-                                value={
-                                  typeof formData[setting._id] === 'string'
-                                    ? formData[setting._id]
-                                    : ''
-                                }
-                                onChange={(e) =>
-                                  setFormData((prevData) => ({
-                                    ...prevData,
-                                    [setting._id]: e.target.value,
-                                  }))
-                                }
-                                className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
-                              >
-                                <option value="">Select an option</option>
-                                {optionsArray.length > 0 ? (
-                                  optionsArray.map((opt) => (
-                                    <option key={opt.key} value={opt.key}>
-                                      {String(opt.label)}
-                                    </option>
-                                  ))
-                                ) : (
-                                  <option disabled>No options available</option>
-                                )}
-                              </select>
-                            </div>
-                          );
-                        })()} */}
-                      {/* {setting.type === 'option' &&
-                        (() => {
-                          const options: string[] = Array.isArray(
-                            setting.options,
-                          )
-                            ? setting.options
-                            : typeof setting.options === 'string'
-                            ? setting.options
-                                .split(',')
-                                .map((opt) => opt.trim())
-                            : ['Yes', 'No'];
-
-                          const filteredOptions = options.filter(
-                            (opt) => opt.length > 0,
-                          );
-                          if (filteredOptions.length === 0) return null;
-
-                          return (
-                            <select
-                              value={(formData[setting._id] as string) || ''}
-                              onChange={(e) =>
-                                handleInputChange(setting._id, e.target.value)
-                              }
-                              className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
-                            >
-                              <option value="">Select an option</option>
-                              {filteredOptions.map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                          );
-                        })()} */}
-
                       {setting.type === 'boolean' && (
                         <div>
                           <label className="flex cursor-pointer items-center">
@@ -648,9 +612,7 @@ const EditSetting: React.FC = () => {
                                 type="checkbox"
                                 name="editProfileWithOTP"
                                 checked={formData[setting._id] === true}
-                                onChange={(e) =>
-                                  handleToggleChange(setting._id)
-                                }
+                                onChange={() => handleToggleChange(setting._id)}
                                 className="sr-only"
                               />
                               {false ? (
@@ -684,51 +646,23 @@ const EditSetting: React.FC = () => {
                         </div>
                       )}
                       {setting.type === 'array' && (
-                        <div>
+                        <div className="flex flex-col gap-2">
                           <Select
                             isMulti
-                            options={
-                              Array.isArray(setting.options)
-                                ? setting.options.map((opt) => {
-                                    if (
-                                      typeof opt === 'object' &&
-                                      'key' in opt &&
-                                      'label' in opt
-                                    ) {
-                                      return {
-                                        value: opt.key,
-                                        label: opt.label,
-                                      };
-                                    }
-                                    return {
-                                      value: String(opt),
-                                      label: String(opt),
-                                    };
-                                  })
-                                : []
-                            }
+                            options={flattenedOptionsMap[setting._id] || []}
                             value={
                               Array.isArray(formData[setting._id])
                                 ? (formData[setting._id] as string[])
                                     .map((key) => {
-                                      const opt = Array.isArray(setting.options)
-                                        ? setting.options.find(
-                                            (o) =>
-                                              (typeof o === 'object' &&
-                                                o.key === key) ||
-                                              o === key,
-                                          )
-                                        : null;
+                                      const opt = (
+                                        flattenedOptionsMap[setting._id] || []
+                                      ).find((o) => o.value === key);
                                       return opt
                                         ? {
-                                            value:
-                                              typeof opt === 'object'
-                                                ? opt.key
-                                                : opt,
-                                            label:
-                                              typeof opt === 'object'
-                                                ? opt.label
-                                                : opt,
+                                            value: opt.value,
+                                            label: opt.label,
+                                            status: opt.status,
+                                            path: opt.path,
                                           }
                                         : null;
                                     })
@@ -738,41 +672,116 @@ const EditSetting: React.FC = () => {
                                       ): item is {
                                         value: string;
                                         label: string;
+                                        status: boolean;
+                                        path: string;
                                       } => Boolean(item),
                                     )
                                 : []
                             }
                             onChange={(selected) =>
-                              handleSelectChange(setting._id, selected, setting)
+                              handleSelectChange(
+                                setting._id,
+                                selected
+                                  ? selected.map((item) => item.value)
+                                  : [],
+                                setting,
+                              )
                             }
                             placeholder="Select options..."
+                            className="w-full"
+                            classNamePrefix="react-select"
+                            menuPortalTarget={document.body}
                             styles={{
-                              container: (base) => ({
+                              control: (base) => ({
                                 ...base,
-                                width: 300,
+                                backgroundColor: 'transparent',
+                                borderColor: '#e5e7eb',
+                                borderRadius: '0.375rem',
+                                padding: '0.5rem 1rem',
+                                boxShadow: 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                                '&:focus-within': {
+                                  borderColor: '#3b82f6',
+                                },
+                                zIndex: 999,
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                backgroundColor: '#ffffff',
+                                borderRadius: '0.375rem',
+                                marginTop: '0.25rem',
+                                zIndex: 9999,
+                              }),
+                              menuPortal: (base) => ({
+                                ...base,
+                                zIndex: 9999,
+                              }),
+                              option: (base, { isFocused, isSelected }) => ({
+                                ...base,
+                                backgroundColor: isSelected
+                                  ? '#3b82f6'
+                                  : isFocused
+                                  ? '#eff6ff'
+                                  : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#1f2937',
+                                '&:active': {
+                                  backgroundColor: '#2563eb',
+                                },
+                              }),
+                              multiValue: (base) => ({
+                                ...base,
+                                backgroundColor: '#eff6ff',
+                                borderRadius: '0.25rem',
+                              }),
+                              multiValueLabel: (base) => ({
+                                ...base,
+                                color: '#1f2937',
+                              }),
+                              multiValueRemove: (base) => ({
+                                ...base,
+                                color: '#1f2937',
+                                '&:hover': {
+                                  backgroundColor: '#dbeafe',
+                                  color: '#2563eb',
+                                },
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                color: '#9ca3af',
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                color: '#1f2937',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                color: '#1f2937',
                               }),
                             }}
-                            className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
+                            theme={(theme) => ({
+                              ...theme,
+                              colors: {
+                                ...theme.colors,
+                                primary: '#3b82f6',
+                                primary25: '#eff6ff',
+                                primary50: '#dbeafe',
+                                neutral0: '#ffffff',
+                                neutral80: '#1f2937',
+                              },
+                            })}
                           />
-                          <p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
                             Selected Values:{' '}
                             {Array.isArray(formData[setting._id]) &&
                             (formData[setting._id] as string[]).length > 0
                               ? (formData[setting._id] as string[])
                                   .map((key) => {
-                                    const opt = Array.isArray(setting.options)
-                                      ? setting.options.find(
-                                          (o) =>
-                                            (typeof o === 'object' &&
-                                              o.key === key) ||
-                                            o === key,
-                                        )
-                                      : null;
-                                    return opt
-                                      ? typeof opt === 'object'
-                                        ? opt.label
-                                        : opt
-                                      : null;
+                                    const opt = (
+                                      flattenedOptionsMap[setting._id] || []
+                                    ).find((o) => o.value === key);
+                                    return opt ? opt.label : null;
                                   })
                                   .filter(Boolean)
                                   .join(', ') || 'None'
@@ -781,138 +790,126 @@ const EditSetting: React.FC = () => {
                         </div>
                       )}
                       {setting.type === 'single-element-array' && (
-                        <div>
+                        <div className="flex flex-col gap-2">
                           <Select
                             isClearable
-                            options={
-                              Array.isArray(setting.options)
-                                ? setting.options.map((opt) => {
-                                    if (
-                                      typeof opt === 'object' &&
-                                      'key' in opt &&
-                                      'label' in opt
-                                    ) {
-                                      return {
-                                        value: opt.key,
-                                        label: opt.label,
-                                      };
-                                    }
-                                    return {
-                                      value: String(opt),
-                                      label: String(opt),
-                                    };
-                                  })
-                                : []
-                            }
+                            options={flattenedOptionsMap[setting._id] || []}
                             value={(() => {
                               const rawValue = formData[setting._id];
-
-                              if (typeof rawValue === 'string') {
-                                // Handle case where value is a single string key
-                                const opt = Array.isArray(setting.options)
-                                  ? setting.options.find(
-                                      (o) =>
-                                        (typeof o === 'object' &&
-                                          o.key === rawValue) ||
-                                        o === rawValue,
-                                    )
-                                  : null;
-
-                                const result = opt
+                              console.log('raw value', rawValue);
+                              if (typeof rawValue === 'string' && rawValue) {
+                                const opt = (
+                                  flattenedOptionsMap[setting._id] || []
+                                ).find((o) => o.value === rawValue);
+                                return opt
                                   ? {
-                                      value:
-                                        typeof opt === 'object' ? opt.key : opt,
-                                      label:
-                                        typeof opt === 'object'
-                                          ? opt.label
-                                          : opt,
+                                      value: opt.value,
+                                      label: opt.label,
+                                      status: opt.status,
+                                      path: opt.path,
                                     }
                                   : null;
-
-                                console.log(
-                                  `Single-select: id=${setting._id}, key=${rawValue}, value=`,
-                                  result,
-                                );
-                                return result;
                               }
-
-                              if (
-                                Array.isArray(rawValue) &&
-                                rawValue.length > 0 &&
-                                typeof rawValue[0] === 'object'
-                              ) {
-                                // Handle array of objects (e.g., [{ key: 'something' }])
-                                const selectedKey = rawValue[0].key;
-
-                                const opt = Array.isArray(setting.options)
-                                  ? setting.options.find(
-                                      (o) =>
-                                        (typeof o === 'object' &&
-                                          o.key === selectedKey) ||
-                                        o === selectedKey,
-                                    )
-                                  : null;
-
-                                const result = opt
-                                  ? {
-                                      value:
-                                        typeof opt === 'object' ? opt.key : opt,
-                                      label:
-                                        typeof opt === 'object'
-                                          ? opt.label
-                                          : opt,
-                                    }
-                                  : null;
-
-                                console.log(
-                                  `Array-based value: id=${setting._id}, key=${selectedKey}, value=`,
-                                  result,
-                                );
-                                return result;
-                              }
-
                               return null;
                             })()}
                             onChange={(selected) =>
-                              handleSelectChange(setting._id, selected, setting)
+                              handleSelectChange(
+                                setting._id,
+                                selected ? [selected.value] : [],
+                                setting,
+                              )
                             }
                             placeholder="Select an option..."
+                            className="w-full"
+                            classNamePrefix="react-select"
+                            menuPortalTarget={document.body}
                             styles={{
-                              container: (base) => ({
+                              control: (base) => ({
                                 ...base,
-                                width: 300,
+                                backgroundColor: 'transparent',
+                                borderColor: '#e5e7eb',
+                                borderRadius: '0.375rem',
+                                padding: '0.5rem 1rem',
+                                boxShadow: 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                                '&:focus-within': {
+                                  borderColor: '#3b82f6',
+                                },
                                 zIndex: 999,
                               }),
-                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                              menu: (base) => ({
+                                ...base,
+                                backgroundColor: '#ffffff',
+                                borderRadius: '0.375rem',
+                                marginTop: '0.25rem',
+                                zIndex: 9999,
+                              }),
+                              menuPortal: (base) => ({
+                                ...base,
+                                zIndex: 9999,
+                              }),
+                              option: (base, { isFocused, isSelected }) => ({
+                                ...base,
+                                backgroundColor: isSelected
+                                  ? '#3b82f6'
+                                  : isFocused
+                                  ? '#eff6ff'
+                                  : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#1f2937',
+                                '&:active': {
+                                  backgroundColor: '#2563eb',
+                                },
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                color: '#9ca3af',
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                color: '#1f2937',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                color: '#1f2937',
+                              }),
+                              clearIndicator: (base) => ({
+                                ...base,
+                                color: '#9ca3af',
+                                '&:hover': {
+                                  color: '#2563eb',
+                                },
+                              }),
                             }}
-                            menuPortalTarget={document.body}
-                            className="w-full rounded border border-stroke bg-transparent py-2 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input"
+                            theme={(theme) => ({
+                              ...theme,
+                              colors: {
+                                ...theme.colors,
+                                primary: '#3b82f6',
+                                primary25: '#eff6ff',
+                                primary50: '#dbeafe',
+                                neutral0: '#ffffff',
+                                neutral80: '#1f2937',
+                              },
+                            })}
                           />
-                          <p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
                             Selected Value:{' '}
                             {formData[setting._id]
                               ? (() => {
-                                  const key = formData[setting._id];
-                                  const opt = Array.isArray(setting.options)
-                                    ? setting.options.find(
-                                        (o) =>
-                                          (typeof o === 'object' &&
-                                            o.key === key) ||
-                                          o === key,
-                                      )
-                                    : null;
-                                  return opt
-                                    ? typeof opt === 'object'
-                                      ? opt.label
-                                      : opt
-                                    : 'None';
+                                  const key = formData[setting._id] as string;
+                                  const opt = (
+                                    flattenedOptionsMap[setting._id] || []
+                                  ).find((o) => o.value === key);
+                                  return opt ? opt.label : 'None';
                                 })()
                               : 'None'}
                           </p>
                         </div>
                       )}
                     </td>
-                    <td className="py-5 px-2">
+                    <td className="py-5 px-2 text-center">
                       <button
                         onClick={() => handleSubmit(setting)}
                         className="bg-primary text-white p-2 rounded w-full disabled:opacity-50 transition-opacity"

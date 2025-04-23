@@ -62,7 +62,7 @@ const ChangePassword: React.FC = () => {
           <div className="p-6.5">
             {/* Old Password */}
             <div className="mb-4.5">
-              <label className="mb-2.5 block text-black dark:text-white">
+              <label className="!mb-2.5 block text-black dark:text-white">
                 Old Password
               </label>
               <input
@@ -78,7 +78,7 @@ const ChangePassword: React.FC = () => {
 
             {/* New Password */}
             <div className="mb-4.5">
-              <label className="mb-2.5 block text-black dark:text-white">
+              <label className="!mb-2.5 block text-black dark:text-white">
                 New Password
               </label>
               <input
@@ -94,7 +94,7 @@ const ChangePassword: React.FC = () => {
 
             {/* Confirm Password */}
             <div className="mb-4.5">
-              <label className="mb-2.5 block text-black dark:text-white">
+              <label className="!mb-2.5 block text-black dark:text-white">
                 Confirm New Password
               </label>
               <input

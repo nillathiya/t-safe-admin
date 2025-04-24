@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { useParams } from 'react-router-dom';
 import { formatDate } from '../../utils/dateUtils';
 import { IFundTransaction } from '../../types';
+import { useCompanyCurrency } from '../../hooks/useCompanyInfo';
 
 const ViewWithdrawal: React.FC = () => {
   const [reason, setReason] = useState<string>('');
@@ -47,9 +48,7 @@ const ViewWithdrawal: React.FC = () => {
   const withdrawal = withdrawals.find(
     (w: IFundTransaction) => w._id === withdrawalId,
   );
-  const companyCurrency =
-    companyInfo.find((data) => data.label === 'currency')?.value || '$';
-
+  const companyCurrency = useCompanyCurrency();
   const handleAction = async (status: number) => {
     if (status === 2 && !reason.trim()) {
       toast.error('Please provide a cancellation reason');
@@ -219,27 +218,62 @@ const ViewWithdrawal: React.FC = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full border border-gray-200 dark:border-gray-600">
                     <tbody>
-                      {withdrawal &&
-                      typeof withdrawal?.withdrawalAccount === 'object' &&
-                      withdrawal?.withdrawalAccount?.details ? (
-                        Object.entries(
-                          withdrawal.withdrawalAccount.details,
-                        ).map(([key, value], index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-gray-100 dark:border-gray-700"
-                          >
-                            <th className="text-left px-4 py-2 font-semibold text-sm text-gray-700 dark:text-gray-300 capitalize w-1/3">
-                              {key.replace(/([A-Z])/g, ' $1').trim()}
-                            </th>
-                            <td className="px-2 py-2 text-gray-700 dark:text-gray-300 w-4 text-center">
-                              :
-                            </td>
-                            <td className="px-4 py-2 text-base text-gray-900 dark:text-white break-words">
-                              {value}
-                            </td>
-                          </tr>
-                        ))
+                      {withdrawal && typeof withdrawal.response === 'string' ? (
+                        (() => {
+                          try {
+                            const parsed = JSON.parse(withdrawal.response);
+                            const details =
+                              parsed.details ||
+                              parsed.withdrawalAccount?.details;
+
+                            if (!details || typeof details !== 'object') {
+                              return (
+                                <tr>
+                                  <td
+                                    colSpan={3}
+                                    className="text-center py-4 text-gray-500 dark:text-gray-400"
+                                  >
+                                    User doesn’t have a withdrawal account
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return Object.entries(details).map(
+                              ([key, value]: any, index) => (
+                                <tr
+                                  key={index}
+                                  className="border-b border-gray-100 dark:border-gray-700"
+                                >
+                                  <th className="text-left px-4 py-2 font-semibold text-sm text-gray-700 dark:text-gray-300 capitalize w-1/3">
+                                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                                  </th>
+                                  <td className="px-2 py-2 text-gray-700 dark:text-gray-300 w-4 text-center">
+                                    :
+                                  </td>
+                                  <td className="px-4 py-2 text-base text-gray-900 dark:text-white break-words">
+                                    {value}
+                                  </td>
+                                </tr>
+                              ),
+                            );
+                          } catch (err) {
+                            console.error(
+                              'Invalid JSON in withdrawal.response:',
+                              err,
+                            );
+                            return (
+                              <tr>
+                                <td
+                                  colSpan={3}
+                                  className="text-center py-4 text-red-500 dark:text-red-400"
+                                >
+                                  Invalid withdrawal data
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })()
                       ) : (
                         <tr>
                           <td

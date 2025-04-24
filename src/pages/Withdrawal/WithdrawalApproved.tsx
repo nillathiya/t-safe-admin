@@ -160,8 +160,35 @@ const WithdrawalApproved: React.FC = () => {
                       {withdrawal.amount}
                     </td>
                     <td className="table-cell">
-                      {withdrawal?.withdrawalAccount?.accountTypeId?.name ||
-                        'N/A'}
+                      {(() => {
+                        try {
+                          const parsedResponse = JSON.parse(
+                            withdrawal.response,
+                          );
+                          console.log('parsedResponse', parsedResponse);
+
+                          const accountType = parsedResponse.accountTypeId;
+
+                          if (accountType) {
+                            if (
+                              typeof accountType === 'object' &&
+                              accountType.name
+                            ) {
+                              return accountType.name;
+                            } else if (typeof accountType === 'string') {
+                              return accountType; // Fallback if it's just an ID or string
+                            }
+                          }
+
+                          return 'N/A'; // Fallback if no accountTypeId or no name
+                        } catch (error) {
+                          console.error(
+                            'Failed to parse response JSON:',
+                            error,
+                          );
+                          return 'Invalid data';
+                        }
+                      })()}
                     </td>
                     {/* <td className="table-cell">{withdrawal.tds || '0'}</td> */}
                     <td

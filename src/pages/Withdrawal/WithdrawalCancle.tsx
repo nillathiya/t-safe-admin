@@ -20,6 +20,7 @@ import { formatDate } from '../../utils/dateUtils';
 import { ICONS } from '../../constants';
 import Icon from '../../components/Icons/Icon';
 import { useCompanyCurrency } from '../../hooks/useCompanyInfo';
+import { IFundTransaction } from '../../types';
 
 const WithdrawalCancle: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -80,7 +81,7 @@ const WithdrawalCancle: React.FC = () => {
   };
   return (
     <div>
-      <Breadcrumb pageName="Pending Withdrwals" />
+      <Breadcrumb pageName="Cancelled Withdrwals" />
       <div className="table-bg">
         {/* Refresh button */}
         <div className="flex justify-end mb-2">
@@ -102,6 +103,7 @@ const WithdrawalCancle: React.FC = () => {
                 <th className="table-header"> Payable Amount</th>
                 <th className="table-header"> Withdrawal Amount</th>
                 {/* <th className="table-header"> TDS</th> */}
+                <th className="table-header"> Reason</th>
                 <th className="table-header"> Status</th>
                 <th className="table-header"> Date</th>
               </tr>
@@ -127,73 +129,88 @@ const WithdrawalCancle: React.FC = () => {
                     colSpan={13}
                     className="text-center py-4 text-gray-600 dark:text-gray-300"
                   >
-                    No Cancelled Withdrawal Found
+                    There are no cancelled withdrawals found.
                   </td>
                 </tr>
               ) : (
-                cancelledWithdrawals.map((withdrawal: any, index: number) => (
-                  <tr key={withdrawal._id}>
-                    <td>{index + 1}</td>
+                cancelledWithdrawals.map(
+                  (withdrawal: IFundTransaction, index: number) => (
+                    <tr key={withdrawal._id}>
+                      <td>{index + 1}</td>
 
-                    <td className="table-cell">
-                      {withdrawal.uCode?.username || 'N/A'}
-                    </td>
+                      <td className="table-cell">
+                        {withdrawal.uCode?.username || 'N/A'}
+                      </td>
 
-                    <td className="table-cell">
-                      {companyCurrency}
-                      {(
-                        (withdrawal.amount ?? 0) +
-                        (withdrawal.txCharge ?? 0) +
-                        (withdrawal.wPool ?? 0)
-                      ).toFixed(2)}
-                    </td>
-                    <td className="table-cell">
-                      {companyCurrency}
-                      {withdrawal.txCharge}
-                    </td>
-                    {/* <td className="table-cell">
+                      <td className="table-cell">
+                        {companyCurrency}
+                        {(
+                          (withdrawal.amount ?? 0) +
+                          (withdrawal.txCharge ?? 0) +
+                          (withdrawal.wPool ?? 0)
+                        ).toFixed(2)}
+                      </td>
+                      <td className="table-cell">
+                        {companyCurrency}
+                        {withdrawal.txCharge}
+                      </td>
+                      {/* <td className="table-cell">
                       {withdrawal.wPool
                         ? `${companyCurrency}${withdrawal.wPool}`
                         : `${companyCurrency}0`}
                     </td> */}
-                    <td className="table-cell">
-                      {companyCurrency}
-                      {withdrawal.amount}
-                    </td>
-                    <td className="table-cell">
-                      {(() => {
-                        try {
-                          const parsedResponse = JSON.parse(
-                            withdrawal.response,
-                          );
-                          console.log('parsedResponse', parsedResponse);
-
-                          const accountType = parsedResponse.accountTypeId;
-
-                          if (accountType) {
+                      <td className="table-cell">
+                        {companyCurrency}
+                        {withdrawal.amount}
+                      </td>
+                      <td className="table-cell">
+                        {(() => {
+                          try {
                             if (
-                              typeof accountType === 'object' &&
-                              accountType.name
+                              withdrawal.response == null ||
+                              typeof withdrawal.response !== 'string'
                             ) {
-                              return accountType.name;
-                            } else if (typeof accountType === 'string') {
-                              return accountType; // Fallback if it's just an ID or string
+                              console.error(
+                                'Response is not a string:',
+                                withdrawal.response,
+                              );
+                              return 'N/A';
                             }
-                          }
 
-                          return 'N/A'; // Fallback if no accountTypeId or no name
-                        } catch (error) {
-                          console.error(
-                            'Failed to parse response JSON:',
-                            error,
-                          );
-                          return 'Invalid data';
-                        }
-                      })()}
-                    </td>
-                    {/* <td className="table-cell">{withdrawal.tds || '0'}</td> */}
-                    <td
-                      className={`
+                            const parsedResponse = JSON.parse(
+                              withdrawal.response,
+                            );
+                            console.log('parsedResponse', parsedResponse);
+
+                            const accountType = parsedResponse.accountTypeId;
+
+                            if (accountType) {
+                              if (
+                                typeof accountType === 'object' &&
+                                accountType.name
+                              ) {
+                                return accountType.name;
+                              } else if (typeof accountType === 'string') {
+                                return accountType; // Fallback if it's just an ID or string
+                              }
+                            }
+
+                            return 'N/A'; // Fallback if no accountTypeId or no name
+                          } catch (error) {
+                            console.error(
+                              'Failed to parse response JSON:',
+                              error,
+                            );
+                            return 'N/A';
+                          }
+                        })()}
+                      </td>
+                      <td className="table-cell">
+                        {withdrawal.reason || 'N/A'}
+                      </td>
+                      {/* <td className="table-cell">{withdrawal.tds || '0'}</td> */}
+                      <td
+                        className={`
                      table-cell
                         ${
                           withdrawal.status === 0
@@ -203,18 +220,19 @@ const WithdrawalCancle: React.FC = () => {
                             : ' !text-red-700'
                         }
                       `}
-                    >
-                      {withdrawal.status === 0
-                        ? 'Pending'
-                        : withdrawal.status === 1
-                        ? 'Approved'
-                        : 'Cancelled'}
-                    </td>
-                    <td className="table-cell">
-                      {formatDate(withdrawal.createdAt)}
-                    </td>
-                  </tr>
-                ))
+                      >
+                        {withdrawal.status === 0
+                          ? 'Pending'
+                          : withdrawal.status === 1
+                          ? 'Approved'
+                          : 'Cancelled'}
+                      </td>
+                      <td className="table-cell">
+                        {formatDate(withdrawal.createdAt)}
+                      </td>
+                    </tr>
+                  ),
+                )
               )}
             </tbody>
           </table>

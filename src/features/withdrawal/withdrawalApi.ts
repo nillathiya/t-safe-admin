@@ -17,7 +17,7 @@ export const getAllWithdrawal = async (): Promise<any> => {
 
 export const updateWithdrawalRequest = async (
   id: string,
-  formData: { status: number; response: string },
+  formData: { status: number; reason: string },
 ): Promise<any> => {
   try {
     const response = await apiClient.put(

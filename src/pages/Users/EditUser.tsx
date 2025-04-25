@@ -208,7 +208,7 @@ const EditUser: React.FC = () => {
                     <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
                       {/* Sponsor User */}
                       <div className="w-full xl:w-1/2">
-                        <label className="mb-2.5 block text-black dark:text-white">
+                        <label className="!mb-2.5 block text-black dark:text-white">
                           Sponsor User
                         </label>
                         <div className="relative z-20 bg-transparent dark:bg-form-input">
@@ -264,7 +264,7 @@ const EditUser: React.FC = () => {
                       </div>
                       {/* Username */}
                       <div className="w-full xl:w-1/2">
-                        <label className="mb-2.5 block text-black dark:text-white">
+                        <label className="!mb-2.5 block text-black dark:text-white">
                           Username
                         </label>
                         <input
@@ -276,7 +276,7 @@ const EditUser: React.FC = () => {
                       </div>
                       {/* Name */}
                       <div className="w-full xl:w-1/2">
-                        <label className="mb-2.5 block text-black dark:text-white">
+                        <label className="!mb-2.5 block text-black dark:text-white">
                           Name
                         </label>
                         <input
@@ -287,7 +287,7 @@ const EditUser: React.FC = () => {
                       </div>
                       {/* Wallet Address */}
                       <div className="w-full xl:w-1/2">
-                        <label className="mb-2.5 block text-black dark:text-white">
+                        <label className="!mb-2.5 block text-black dark:text-white">
                           User Address/Wallet
                         </label>
                         <input
@@ -307,7 +307,7 @@ const EditUser: React.FC = () => {
                     </div>
                     {/* Mobile */}
                     <div className="mb-4.5 relative">
-                      <label className="mb-2.5 block text-black dark:text-white">
+                      <label className="!mb-2.5 block text-black dark:text-white">
                         Mobile
                       </label>
                       <Controller
@@ -352,7 +352,7 @@ const EditUser: React.FC = () => {
                     </div>
                     {/* Email */}
                     <div className="mb-4.5">
-                      <label className="mb-2.5 block text-black dark:text-white">
+                      <label className="!mb-2.5 block text-black dark:text-white">
                         Email
                       </label>
                       <input
@@ -374,7 +374,7 @@ const EditUser: React.FC = () => {
                     </div>
                     {/* Block Status */}
                     <div className="mb-4.5">
-                      <label className="mb-2.5 block text-black dark:text-white">
+                      <label className="!mb-2.5 block text-black dark:text-white">
                         Change Status
                       </label>
                       <div className="relative z-20 bg-transparent dark:bg-form-input">
@@ -435,7 +435,7 @@ const EditUser: React.FC = () => {
                     </div>
                     {/* Active Status */}
                     <div className="mb-4.5">
-                      <label className="mb-2.5 block text-black dark:text-white">
+                      <label className="!mb-2.5 block text-black dark:text-white">
                         Change Active Status
                       </label>
                       <div className="relative z-20 bg-transparent dark:bg-form-input">
@@ -515,7 +515,7 @@ const EditUser: React.FC = () => {
                 >
                   <div className="p-6.5">
                     <div className="mb-4.5 relative">
-                      <label className="mb-2.5 block text-black dark:text-white">
+                      <label className="!mb-2.5 block text-black dark:text-white">
                         Set New Password
                       </label>
                       <input
@@ -533,7 +533,7 @@ const EditUser: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute -translate-x-9 top-12 -translate-y-1/2  text-gray-500 dark:text-gray-400"
+                        className="absolute -translate-x-9 top-15 -translate-y-1/2  text-gray-500 dark:text-gray-400"
                         style={{ border: 'none' }}
                       >
                         {showPassword ? (

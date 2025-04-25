@@ -35,13 +35,13 @@ export const MENU: {
       },
       {
         id: generateUniqueId(),
-        title: 'User Reward',
+        title: 'Add Member',
         path: '/users/member',
         icon: 'USER',
       },
       {
         id: generateUniqueId(),
-        title: 'Add Member',
+        title: 'User Reward',
         path: '/users/reward',
         icon: 'USER',
       },

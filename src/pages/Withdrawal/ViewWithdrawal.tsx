@@ -60,7 +60,7 @@ const ViewWithdrawal: React.FC = () => {
       value: true,
     });
     try {
-      const formData = { status, response: status === 2 ? reason : '' };
+      const formData = { status, reason: status === 2 ? reason : '' };
       await dispatch(
         updateWithdrawalRequestAsync({ id: withdrawalId as string, formData }),
       ).unwrap();
@@ -188,7 +188,7 @@ const ViewWithdrawal: React.FC = () => {
                                 :
                               </td>
                               <td className="px-4 py-2 text-base text-gray-900 dark:text-white">
-                                {withdrawal.response || 'N/A'}
+                                {withdrawal.reason || 'N/A'}
                               </td>
                             </tr>
                           )}

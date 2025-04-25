@@ -149,7 +149,7 @@ export const ROUTES: Routes = {
     CHECK_NAME: `${API_URL}/user/check-name`,
     GET_GENERATION_TREE: `${API_URL}/user/generation-tree`,
     GET_DETAILS_WITH_INVEST_INFO: `${API_URL}/api/user/details-with-investment`,
-    ADD_MEMBER: `${API_URL}/api/user/create`,
+    ADD_MEMBER: `${API_URL}/user/admin/register`,
   },
   ORDER: {
     GET_ALL: `${API_URL}/user/orders`,

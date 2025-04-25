@@ -81,7 +81,7 @@ const WithdrawalApproved: React.FC = () => {
   };
   return (
     <div>
-      <Breadcrumb pageName="Pending Withdrwals" />
+      <Breadcrumb pageName="Approved Withdrwals" />
       <div className="table-bg">
         {/* Refresh button */}
         <div className="flex justify-end mb-2">
@@ -122,13 +122,13 @@ const WithdrawalApproved: React.FC = () => {
                         ))}
                     </tr>
                   ))
-              ) : withdrawals.length === 0 ? (
+              ) : approvedWithdrawals.length === 0 ? (
                 <tr>
                   <td
                     colSpan={13}
                     className="text-center py-4 text-gray-600 dark:text-gray-300"
                   >
-                    No orders found
+                    There are no approved withdrawals found.
                   </td>
                 </tr>
               ) : (

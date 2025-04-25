@@ -133,7 +133,7 @@ const WithdrawalPending: React.FC = () => {
                     colSpan={13}
                     className="text-center py-4 text-gray-600 dark:text-gray-300"
                   >
-                    No Pending Withdrawal found
+                    There are no pending withdrawals found.
                   </td>
                 </tr>
               ) : (

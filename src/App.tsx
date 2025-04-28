@@ -43,7 +43,6 @@ import RankSettings from './pages/Settings/GeneralSettings/RankSettings';
 import NewAndEvents from './pages/Settings/NewAndEvent';
 import ViewUserGeneration from './pages/Network/ViewUserGeneration';
 import { AppDispatch, RootState } from './store/store';
-import { ICompanyInfo } from './types/settings';
 import { getAllCompanyInfoAsync } from './features/settings/settingsSlice';
 import toast from 'react-hot-toast';
 import EditSetting from './pages/Settings/GeneralSettings/EditSetting';

@@ -35,10 +35,14 @@ const AllUsers: React.FC = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      await dispatch(getAllUserAsync()).unwrap();
-      await dispatch(getAllOrdersAsync()).unwrap();
+      await Promise.all([
+        dispatch(getAllUserAsync()).unwrap(),
+        dispatch(getAllOrdersAsync()).unwrap(),
+      ]);
+      toast.success('Data refreshed successfully');
     } catch (error: any) {
-      toast.error(error?.message || 'Server error');
+      console.error('Error fetching data:', error);
+      toast.error(error?.message || 'Failed to fetch data');
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +53,11 @@ const AllUsers: React.FC = () => {
   }, [dispatch]);
 
   const handleRefresh = async () => {
-    fetchData();
+    try {
+      await fetchData();
+    } catch (error) {
+      console.error('Refresh error:', error);
+    }
   };
 
   const handleToggleStatus = async (
@@ -59,17 +67,15 @@ const AllUsers: React.FC = () => {
   ) => {
     try {
       const newStatus = currentStatus === 1 ? 0 : 1;
-
       await dispatch(
         updateUserStatusAsync({
           userId,
           accountStatus: {
             activeStatus: newStatus,
             blockStatus: currentBlockStatus,
-          }, // ✅ Keep blockStatus unchanged
+          },
         }),
       ).unwrap();
-
       toast.success('User active status updated successfully');
     } catch (error: any) {
       console.error('Error updating user active status:', error);
@@ -89,10 +95,9 @@ const AllUsers: React.FC = () => {
           accountStatus: {
             blockStatus: isBlocked ? 0 : 1,
             activeStatus: currentStatus,
-          }, // ✅ Keep activeStatus unchanged
+          },
         }),
       ).unwrap();
-
       toast.success('User block status updated successfully');
     } catch (error: any) {
       console.error('Error updating user block status:', error);
@@ -101,7 +106,6 @@ const AllUsers: React.FC = () => {
   };
 
   const updatedUsers = useMemo(() => {
-    console.log('Computing updatedUsers', { users, orders });
     if (!users || users.length === 0) return [];
     return users.map((user) => {
       const userId = user._id;
@@ -116,69 +120,182 @@ const AllUsers: React.FC = () => {
       };
     });
   }, [users, orders]);
-
+  const navigate = useNavigate();
   useEffect(() => {
-    console.log('1');
-    const tableElement = tableRef.current;
-    console.log('tableElement', tableElement);
-    console.log('isLoading', isLoading);
-    console.log('users', users);
+    if (!tableRef.current || isLoading || updatedUsers.length === 0) return;
 
-    let timer: NodeJS.Timeout;
+    const tableElement = tableRef.current;
     let tableInstance: any;
 
-    if (!isLoading && updatedUsers.length > 0 && tableElement) {
-      console.log('2');
+    // Initialize DataTable
+    const initializeDataTable = () => {
+      const $table = $(tableElement);
 
-      timer = setTimeout(() => {
-        console.log('3');
-
-        // ✅ Now tableElement is guaranteed to be non-null
-        const $table = $(tableElement);
-
-        if ($.fn.dataTable.isDataTable(tableElement)) {
-          $table.DataTable().destroy();
-          $table.empty(); // Clear DOM to prevent conflicts
+      // Check if DataTable is already initialized
+      if ($.fn.dataTable.isDataTable(tableElement)) {
+        // Destroy existing DataTable safely
+        try {
+          $table.DataTable().clear().destroy();
+        } catch (error) {
+          console.warn('Error destroying DataTable:', error);
         }
+      }
 
-        console.log('4');
+      // Initialize DataTable
+      tableInstance = $table.DataTable({
+        paging: true,
+        ordering: true,
+        info: true,
+        responsive: true,
+        searching: true,
+        pageLength: DEFAULT_PER_PAGE_ITEMS,
+        data: updatedUsers,
+        columns: [
+          { data: null, render: (_, __, ___, meta) => meta.row + 1 },
+          {
+            data: '_id',
+            render: (id) => `
+              <div class="flex gap-2">
+                <button class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition edit-btn" data-id="${id}">Edit</button>
+                <button class="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition login-btn" data-id="${id}">Login</button>
+              </div>
+            `,
+          },
+          {
+            data: 'sponsorUCode',
+            render: (sponsor) =>
+              sponsor?.username
+                ? sponsor.name
+                  ? `${sponsor.username} (${sponsor.name})`
+                  : sponsor.username
+                : 'N/A',
+          },
+          { data: 'name', defaultContent: 'N/A' },
+          { data: 'username', defaultContent: 'N/A' },
+          { data: 'email', defaultContent: 'N/A' },
+          { data: 'mobile', defaultContent: 'N/A' },
+          { data: 'package', defaultContent: '0' },
+          { data: 'myRank', defaultContent: '0' },
+          {
+            data: 'walletAddress',
+            render: (address, _, row, meta) => `
+              <div class="flex gap-2 items-center">
+                ${
+                  address
+                    ? `${address.slice(0, 15)}...${address.slice(-4)}`
+                    : 'N/A'
+                }
+                <div class="copy-btn" data-address="${address || ''}" data-index="${
+                  meta.row
+                }">
+                  ${
+                    copied.index === meta.row && copied.value
+                      ? '<span class="text-green-700">Copied</span>'
+                      : '<svg class="w-4 h-4" ... >...</svg>' // Replace with your Icon component
+                  }
+                </div>
+              </div>
+            `,
+          },
+          { data: 'createdAt', render: (date) => formatDate(date) },
+          {
+            data: 'accountStatus.activeStatus',
+            render: (status, _, row) => `
+              <label class="switch">
+                <input type="checkbox" class="status-toggle" data-id="${
+                  row._id
+                }" data-block-status="${row.accountStatus.blockStatus}" ${
+                  status === 1 ? 'checked' : ''
+                }>
+                <span class="slider round"></span>
+              </label>
+            `,
+          },
+          {
+            data: 'accountStatus.blockStatus',
+            render: (status, _, row) => `
+              <label class="switch">
+                <input type="checkbox" class="block-toggle" data-id="${
+                  row._id
+                }" data-active-status="${row.accountStatus.activeStatus}" ${
+                  status === 1 ? 'checked' : ''
+                }>
+                <span class="slider round"></span>
+              </label>
+            `,
+          },
+        ],
+      });
 
-        tableInstance = $table.DataTable({
-          paging: true,
-          ordering: true,
-          info: true,
-          responsive: true,
-          searching: true,
-          pageLength: DEFAULT_PER_PAGE_ITEMS,
+      // Attach event listeners
+      $table
+        .off('click', '.edit-btn')
+        .on('click', '.edit-btn', function () {
+          const id = $(this).data('id');
+          navigate(`/users/edituser/${id}`);
         });
-      }, 300);
-    }
 
-    console.log('5');
+      $table
+        .off('click', '.login-btn')
+        .on('click', '.login-btn', function () {
+          const id = $(this).data('id');
+          handleRequestImpersonationToken(id);
+        });
 
+      $table
+        .off('click', '.copy-btn')
+        .on('click', '.copy-btn', function () {
+          const address = $(this).data('address');
+          const index = $(this).data('index');
+          if (address) {
+            navigator.clipboard.writeText(address);
+            setCopied({ index, value: true });
+            setTimeout(() => setCopied({ index, value: false }), 1500);
+          }
+        });
+
+      $table
+        .off('change', '.status-toggle')
+        .on('change', '.status-toggle', function () {
+          const id = $(this).data('id');
+          const blockStatus = $(this).data('block-status');
+          const currentStatus = $(this).is(':checked') ? 0 : 1;
+          handleToggleStatus(id, currentStatus, blockStatus);
+        });
+
+      $table
+        .off('change', '.block-toggle')
+        .on('change', '.block-toggle', function () {
+          const id = $(this).data('id');
+          const activeStatus = $(this).data('active-status');
+          const isBlocked = $(this).is(':checked');
+          handleToggleBlock(id, isBlocked, activeStatus);
+        });
+    };
+
+    // Initialize DataTable with a slight delay to ensure DOM stability
+    const timer = setTimeout(initializeDataTable, 100);
+
+    // Cleanup
     return () => {
       clearTimeout(timer);
-      if (
-        tableInstance &&
-        $.fn.dataTable.isDataTable(tableElement as HTMLTableElement)
-      ) {
-        tableInstance.destroy();
+      if (tableInstance && $.fn.dataTable.isDataTable(tableElement)) {
+        try {
+          tableInstance.clear().destroy();
+        } catch (error) {
+          console.warn('Error during DataTable cleanup:', error);
+        }
       }
     };
-  }, [updatedUsers]);
+  }, [updatedUsers, isLoading, copied, navigate]);
 
-  const navigate = useNavigate();
 
-  const handleEdit = (id: string) => {
-    navigate(`/users/edituser/${id}`);
-  };
 
   const handleRequestImpersonationToken = async (userId: string) => {
     try {
       const response = await dispatch(
         requestImpersonationTokenAsync(userId),
       ).unwrap();
-      console.log('response', response);
       if (response.success) {
         const token = response.data;
         const userAppURL = `${USER_API_URL}?impersonate=${token}`;
@@ -187,14 +304,8 @@ const AllUsers: React.FC = () => {
         toast.error('Failed to request user login');
       }
     } catch (error: any) {
-      toast.error(error || 'unexpected error occurred');
+      toast.error(error?.message || 'Unexpected error occurred');
     }
-  };
-
-  const handleCopy = (address: string, index: number) => {
-    navigator.clipboard.writeText(address);
-    setCopied({ index, value: true });
-    setTimeout(() => setCopied({ index, value: false }), 1500);
   };
 
   return (
@@ -202,11 +313,17 @@ const AllUsers: React.FC = () => {
       <Breadcrumb pageName="All Users" />
       <div className="table-bg">
         <div className="card-body overflow-x-auto">
-          {/* Refresh button */}
           <div className="flex justify-end mb-2">
             <div className="w-15">
-              <button onClick={handleRefresh} className="btn-refresh">
-                <Icon Icon={ICONS.REFRESH} className="w-5 h-5 sm:w-6 sm:h-6" />
+              <button
+                onClick={handleRefresh}
+                className="btn-refresh"
+                disabled={isLoading}
+              >
+                <Icon
+                  Icon={ICONS.REFRESH}
+                  className="w-5 h-5 sm:w-6 sm:h-6"
+                />
               </button>
             </div>
           </div>
@@ -256,100 +373,7 @@ const AllUsers: React.FC = () => {
                     No users found
                   </td>
                 </tr>
-              ) : (
-                updatedUsers.map((user, index) => (
-                  <tr key={index}>
-                    <td className="table-cell"> {index + 1}</td>
-                    <td className="flex gap-2 ">
-                      <button
-                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                        onClick={() => handleEdit(user._id)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-                        onClick={() =>
-                          handleRequestImpersonationToken(user._id)
-                        }
-                      >
-                        Login
-                      </button>
-                    </td>
-                    <td className="table-cell">
-                      {' '}
-                      {user.sponsorUCode?.username
-                        ? user.sponsorUCode.name
-                          ? `${user.sponsorUCode.username} (${user.sponsorUCode.name})`
-                          : user.sponsorUCode.username
-                        : 'N/A'}
-                    </td>
-                    <td className="table-cell"> {user.name || 'N/A'}</td>
-                    <td className="table-cell"> {user.username || 'N/A'}</td>
-                    <td className="table-cell"> {user.email || 'N/A'}</td>
-                    <td className="table-cell"> {user.mobile || 'N/A'}</td>
-                    <td className="table-cell"> {user.package || 0}</td>
-                    <td className="table-cell"> {user.myRank || 0}</td>
-                    <td className="table-cell">
-                      <div className="flex gap-2 items-center">
-                        {user.walletAddress
-                          ? `${user.walletAddress.slice(
-                              0,
-                              15,
-                            )}...${user.walletAddress.slice(-4)}`
-                          : 'N/A'}
-
-                        <div
-                          onClick={() => handleCopy(user.walletAddress, index)}
-                        >
-                          {copied.index === index && copied.value == true ? (
-                            <span className="text-green-700">Copied</span>
-                          ) : (
-                            <Icon Icon={ICONS.COPY} className="w-4 h-4" />
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="table-cell">
-                      {' '}
-                      {formatDate(user.createdAt)}
-                    </td>
-                    <td>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={user.accountStatus?.activeStatus === 1}
-                          onChange={() =>
-                            handleToggleStatus(
-                              user._id,
-                              user.accountStatus.activeStatus,
-                              user.accountStatus.blockStatus,
-                            )
-                          }
-                        />
-                        <span className="slider round"></span>
-                      </label>
-                    </td>
-                    <td>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={user.accountStatus?.blockStatus === 1}
-                          onChange={() =>
-                            handleToggleBlock(
-                              user._id,
-                              user.accountStatus.blockStatus === 1,
-                              user.accountStatus.activeStatus,
-                            )
-                          }
-                        />
-                        <span className="slider round"></span>
-                      </label>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ) : null}
             </tbody>
           </table>
         </div>
@@ -399,6 +423,11 @@ const AllUsers: React.FC = () => {
           
           input:checked + .slider:before {
             transform: translateX(14px);
+          }
+          
+          .btn-refresh:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
           }
         `}
       </style>

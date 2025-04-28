@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
-import toast from 'react-hot-toast';
 import { fetchWithdrawals } from '../../features/withdrawal/withdrawalSlice';
 
 interface Card {

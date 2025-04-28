@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
 import toast from 'react-hot-toast';
@@ -13,24 +13,25 @@ interface Card {
 }
 
 const DashboardCards: React.FC = () => {
+  const [hasFetched, setHasFetched] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
-  const { withdrawals, isLoading } = useSelector(
+  const { withdrawals } = useSelector(
     (state: RootState) => state.withdrawal,
   );
 
   useEffect(() => {
     (async () => {
       try {
-        if (withdrawals.length === 0) {
+        if (!hasFetched && withdrawals.length === 0) {
           await dispatch(fetchWithdrawals()).unwrap();
+          setHasFetched(true);
         }
-      } catch (error: any) {
-        //   toast.error(error || 'Server error');
+      } catch (error) {
         console.error(error || 'Server error');
       }
     })();
-  }, [dispatch, withdrawals]);
+  }, [dispatch, withdrawals, hasFetched]);
 
   // Count withdrawals based on status
   const withdrawalCounts = {

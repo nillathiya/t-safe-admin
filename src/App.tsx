@@ -87,7 +87,7 @@ function App() {
 
   // Extract values correctly
   const appName = useCompanyName() || 'Default App';
-  const favicon = useCompanyFavicon() || '/default-favicon.ico';
+  const favicon = useCompanyFavicon() || '/favicon.ico';
   console.log(favicon);
   useEffect(() => {
     if (appName && favicon) {

@@ -40,7 +40,7 @@ export const updateWithdrawalRequestAsync = createAsyncThunk(
     {
       id,
       formData,
-    }: { id: string; formData: { status: number; reason: string } },
+    }: { id: string; formData: { status: number; reason: string; txNumber?: string; response?: string } },
     { rejectWithValue },
   ) => {
     try {

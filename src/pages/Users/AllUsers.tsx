@@ -173,26 +173,23 @@ const AllUsers: React.FC = () => {
           { data: 'name', defaultContent: 'N/A' },
           { data: 'username', defaultContent: 'N/A' },
           { data: 'email', defaultContent: 'N/A' },
-          { data: 'mobile', defaultContent: 'N/A' },
+          { data: 'contactNumber', defaultContent: 'N/A' },
           { data: 'package', defaultContent: '0' },
           { data: 'myRank', defaultContent: '0' },
           {
             data: 'walletAddress',
             render: (address, _, row, meta) => `
               <div class="flex gap-2 items-center">
-                ${
-                  address
-                    ? `${address.slice(0, 15)}...${address.slice(-4)}`
-                    : 'N/A'
-                }
-                <div class="copy-btn" data-address="${address || ''}" data-index="${
-                  meta.row
-                }">
-                  ${
-                    copied.index === meta.row && copied.value
-                      ? '<span class="text-green-700">Copied</span>'
-                      : '<svg class="w-4 h-4" ... >...</svg>' // Replace with your Icon component
-                  }
+                ${address
+                ? `${address.slice(0, 15)}...${address.slice(-4)}`
+                : 'N/A'
+              }
+                <div class="copy-btn" data-address="${address || ''}" data-index="${meta.row
+              }">
+                  ${copied.index === meta.row && copied.value
+                ? '<span class="text-green-700">Copied</span>'
+                : '<svg class="w-4 h-4" ... >...</svg>' // Replace with your Icon component
+              }
                 </div>
               </div>
             `,
@@ -202,11 +199,9 @@ const AllUsers: React.FC = () => {
             data: 'accountStatus.activeStatus',
             render: (status, _, row) => `
               <label class="switch">
-                <input type="checkbox" class="status-toggle" data-id="${
-                  row._id
-                }" data-block-status="${row.accountStatus.blockStatus}" ${
-                  status === 1 ? 'checked' : ''
-                }>
+                <input type="checkbox" class="status-toggle" data-id="${row._id
+              }" data-block-status="${row.accountStatus.blockStatus}" ${status === 1 ? 'checked' : ''
+              }>
                 <span class="slider round"></span>
               </label>
             `,
@@ -215,11 +210,9 @@ const AllUsers: React.FC = () => {
             data: 'accountStatus.blockStatus',
             render: (status, _, row) => `
               <label class="switch">
-                <input type="checkbox" class="block-toggle" data-id="${
-                  row._id
-                }" data-active-status="${row.accountStatus.activeStatus}" ${
-                  status === 1 ? 'checked' : ''
-                }>
+                <input type="checkbox" class="block-toggle" data-id="${row._id
+              }" data-active-status="${row.accountStatus.activeStatus}" ${status === 1 ? 'checked' : ''
+              }>
                 <span class="slider round"></span>
               </label>
             `,

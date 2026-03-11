@@ -46,7 +46,7 @@ const EditUser: React.FC = () => {
       name: '',
       walletAddress: '',
       email: '',
-      mobile: '',
+      contactNumber: '',
       dob: '',
       gender: '',
       accountStatus: {
@@ -112,10 +112,10 @@ const EditUser: React.FC = () => {
         username: selectedUser?.username || '',
         name: selectedUser?.name || '',
         email: selectedUser?.email || '',
-        mobile: selectedUser?.mobile
-          ? `+${
-              selectedUser?.address?.countryCode || '91'
-            }${selectedUser?.mobile}`
+        contactNumber: selectedUser?.contactNumber
+          ? selectedUser.contactNumber.startsWith('+')
+            ? selectedUser.contactNumber
+            : `+${selectedUser.contactNumber}`
           : '',
         dob: selectedUser?.dob ? selectedUser.dob.split('T')[0] : '',
         gender: selectedUser?.gender || '',
@@ -124,7 +124,7 @@ const EditUser: React.FC = () => {
           activeStatus: selectedUser?.accountStatus?.activeStatus || 0,
         },
       });
-      setMobile(selectedUser?.mobile || '');
+      setMobile(selectedUser?.contactNumber || '');
       setCountryCode(selectedUser?.address?.countryCode || '91');
     }
   }, [selectedUser, reset]);
@@ -136,12 +136,12 @@ const EditUser: React.FC = () => {
       sponsorUCode: data.sponsorUCode || null,
       ...(mobile &&
         countryCode && {
-          mobile,
-          address: {
-            ...data.address,
-            countryCode,
-          },
-        }),
+        mobile,
+        address: {
+          ...data.address,
+          countryCode,
+        },
+      }),
       userId,
     };
 
@@ -157,8 +157,10 @@ const EditUser: React.FC = () => {
         username: result.username || '',
         name: result.name || '',
         email: result.email || '',
-        mobile: result.mobile
-          ? `+${result.address?.countryCode || '91'}${result.mobile}`
+        contactNumber: result.contactNumber
+          ? result.contactNumber.startsWith('+')
+            ? result.contactNumber
+            : `+${result.contactNumber}`
           : '',
         dob: result.dob ? result.dob.split('T')[0] : '',
         gender: result.gender || '',
@@ -311,7 +313,7 @@ const EditUser: React.FC = () => {
                         Mobile
                       </label>
                       <Controller
-                        name="mobile"
+                        name="contactNumber"
                         control={control}
                         rules={{
                           minLength: {
@@ -344,9 +346,9 @@ const EditUser: React.FC = () => {
                           />
                         )}
                       />
-                      {errors.mobile?.message && (
+                      {errors.contactNumber?.message && (
                         <p className="text-danger-600 text-sm mt-1">
-                          {errors.mobile.message}
+                          {errors.contactNumber.message}
                         </p>
                       )}
                     </div>
@@ -375,7 +377,7 @@ const EditUser: React.FC = () => {
                     {/* Block Status */}
                     <div className="mb-4.5">
                       <label className="!mb-2.5 block text-black dark:text-white">
-                        Change Status
+                        Change Block Status
                       </label>
                       <div className="relative z-20 bg-transparent dark:bg-form-input">
                         <Controller

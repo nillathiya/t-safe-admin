@@ -97,6 +97,7 @@ const WithdrawalApproved: React.FC = () => {
               <tr>
                 <th className="table-header"> S.No</th>
                 <th className="table-header"> Tx user</th>
+                <th className="table-header"> Action</th>
                 <th className="table-header"> Amount</th>
                 <th className="table-header"> Tx Charge</th>
                 {/* <th className="table-header"> Withdrawal pool</th> */}
@@ -138,6 +139,14 @@ const WithdrawalApproved: React.FC = () => {
 
                     <td className="table-cell">
                       {withdrawal.uCode?.username || 'N/A'}
+                    </td>
+                    <td className="table-cell">
+                      <button
+                        onClick={() => handleClick(withdrawal._id)}
+                        className="inline-flex items-center justify-center rounded-md bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+                      >
+                        View
+                      </button>
                     </td>
 
                     <td className="table-cell">
